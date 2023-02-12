@@ -5,8 +5,8 @@
 
 canvas {
   background: #fff;
-  /*width: 1024px;*/
-  /*margin-top: -100px;*/
+  width: 640px;
+  margin-top: -100px;
 }
 
 html {
