@@ -1,6 +1,15 @@
 const IMAGES = {
-  dude: 'dude.png',
-  dudeWalk: 'dude-Sheet.png',
+  dudeWalk: 'dude-walk-Sheet.png',
+  dudeSitting: 'dude-sitting.png',
+  dudeCrouch: 'dude-crouch.png',
+  dudeTransformTrash: 'dude-transform-trash-Sheet.png',
+  bench: 'bench.png',
+  trashbin: 'trashbin.png',
+  trashspot: 'trashshop.png',
+  smokerWalk: 'smoker-walk-Sheet.png',
+  smokerSitting: 'smoker-sitting-Sheet.png',
+  smokerTransform: 'smoker-transform-Sheet.png',
+  cig: 'smoke-Sheet.png',
 };
 
 export type ImageMap = {
@@ -22,7 +31,7 @@ export async function loadImages(): Promise<ImageMap> {
   });
 
   return map;
-};
+}
 
 async function loadImage(imagePath: string) {
   return new Promise<HTMLImageElement>((resolve) => {

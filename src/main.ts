@@ -1,9 +1,13 @@
-import { IW, IH, OW, OH, DRAW_FPS, RS, COLOR } from './config';
+import { IW, IH, DRAW_FPS, RS, COLOR } from './config';
 import { loadImages } from './images';
 import { GameLoop } from './loop';
 import { inputController, resources } from './deps';
-import { defaultDudeState, drawDude, updateDude } from './dude';
 import { drawDebugGrid } from './debug';
+import {
+  defaultActSmokeState,
+  drawActSmoke,
+  updateActSmoke,
+} from './act-smoke';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -17,7 +21,8 @@ canvas.height = IH;
 const loop = new GameLoop({ onTick: tick });
 
 const state = {
-  dude: defaultDudeState,
+  actKind: 'smoke',
+  act: defaultActSmokeState,
 };
 
 function draw({ lastTime }) {
@@ -25,9 +30,9 @@ function draw({ lastTime }) {
 
   drawBackground();
 
-  drawDebugGrid(ctx);
+  // drawDebugGrid(ctx);
 
-  drawDude(ctx, { state: state.dude });
+  drawActSmoke(ctx, { state: state.act });
 }
 
 function drawBackground() {
@@ -42,7 +47,7 @@ const drawInterval = 1 / DRAW_FPS;
 function tick({ deltaTime, lastTime }) {
   inputController.update();
 
-  state.dude = updateDude({ state: state.dude, deltaTime });
+  state.act = updateActSmoke({ state: state.act, deltaTime });
 
   const drawDeltaTime = lastTime - lastDrawTime;
   if (drawDeltaTime > drawInterval) {

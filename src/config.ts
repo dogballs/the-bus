@@ -1,4 +1,4 @@
-export const DRAW_FPS = 15;
+export const DRAW_FPS = 60;
 
 export const RS = 8; // render scale
 

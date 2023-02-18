@@ -20,7 +20,17 @@ export interface Animation<T> {
   reset(): void;
 }
 
-export class FrameAnimation<T> implements Animation<T> {
+export type Sheet = [number, number, number, number];
+
+export function createSheet(width, height, count, startIndex = 0): Sheet[] {
+  const sheet = [];
+  for (let i = startIndex; i < startIndex + count; i++) {
+    sheet.push([width * i, 0, width, height]);
+  }
+  return sheet;
+}
+
+export class SheetAnimation<T> implements Animation<T> {
   private frames: T[];
   private options: AnimationOptions;
   private frameIndex: number;
