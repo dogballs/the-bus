@@ -1,7 +1,9 @@
 import { IW, IH, OW, OH, FPS, RS, COLOR } from './config';
-import { InputController } from './input';
 import { loadImages } from './images';
 import { GameLoop } from './loop';
+import { inputController, resources } from './deps';
+
+import { defaultDudeState, drawDude, updateDude } from './dude';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -12,20 +14,19 @@ const ctx = canvas.getContext('2d');
 canvas.width = IW;
 canvas.height = IH;
 
-const inputController = new InputController()
 const loop = new GameLoop({ fps: FPS, onTick: tick });
 
-const resources = {
-  images: undefined,
+const state = {
+  dude: defaultDudeState,
 };
 
-function draw() {
+function draw({ lastTime }) {
   ctx.clearRect(0, 0, IW, IH);
 
   drawBackground();
   drawDebugGrid();
 
-  drawDude();
+  drawDude(ctx, { state: state.dude });
 }
 
 function drawBackground() {
@@ -33,31 +34,31 @@ function drawBackground() {
   ctx.fillRect(0, 0, IW, IH);
 }
 
-function drawDude() {
-  ctx.drawImage(resources.images.dude, 4, 4);
-}
-
 function drawDebugGrid() {
-  ctx.strokeStyle = 'rgba(128,128,128,0.5)';
-  ctx.lineWidth = 0.01;
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 0.1;
 
   for (let i = 0; i < OW; i++) {
+    ctx.beginPath();
     ctx.moveTo(i, 0);
     ctx.lineTo(i, OH);
     ctx.stroke();
   }
 
   for (let i = 0; i < OH; i++) {
+    ctx.beginPath();
     ctx.moveTo(0, i);
     ctx.lineTo(OW, i);
     ctx.stroke();
   }
 }
 
-function tick() {
+function tick({ deltaTime, lastTime }) {
   inputController.update();
 
-  draw();
+  updateDude({ state: state.dude, deltaTime });
+
+  draw({ lastTime });
 }
 
 async function main() {

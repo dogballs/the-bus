@@ -1,5 +1,6 @@
 const IMAGES = {
-  dude: 'data/graphics/dude.png',
+  dude: 'dude.png',
+  dudeWalk: 'dude-Sheet.png',
 };
 
 export type ImageMap = {
@@ -8,7 +9,7 @@ export type ImageMap = {
 
 export async function loadImages(): Promise<ImageMap> {
   const promises = Object.keys(IMAGES).map(async (id) => {
-    const path = IMAGES[id];
+    const path = `data/graphics/${IMAGES[id]}`;
     return { id, image: await loadImage(path) };
   });
 

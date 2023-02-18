@@ -244,7 +244,7 @@ class GamepadInputDevice implements InputDevice {
       return;
     }
 
-    // Extract buttons that are in pressed state
+    // Extract buttons that are in pressed state.ts
     const codes = new Set<GamepadButtonCode>();
 
     const { buttons } = gamepad;
