@@ -456,6 +456,12 @@ class InputMethod {
     return codes.some((code) => downCodes.includes(code));
   }
 
+  isHold(control: InputControl) {
+    const codes = this.unmap(control);
+    const holdCodes = this.device.getHoldCodes();
+    return codes.some((code) => holdCodes.includes(code));
+  }
+
   getHoldLastOf(controls: InputControl[]): InputControl {
     let latestIndex = -1;
     let latestControl: InputControl = undefined;
@@ -504,6 +510,10 @@ export class InputController {
 
   isDown(control: InputControl) {
     return this.methodMap.get(this.activeDeviceType).isDown(control);
+  }
+
+  isHold(control: InputControl) {
+    return this.methodMap.get(this.activeDeviceType).isHold(control);
   }
 
   getHoldLastOf(controls: InputControl[]) {

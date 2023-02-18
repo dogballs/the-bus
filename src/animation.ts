@@ -1,4 +1,4 @@
-import { FPS } from './config';
+import { DRAW_FPS } from './config';
 
 export interface AnimationOptions {
   delay?: number;
@@ -8,11 +8,19 @@ export interface AnimationOptions {
 
 const DEFAULT_OPTIONS = {
   delay: 0,
-  fps: FPS,
+  fps: DRAW_FPS,
   loop: false,
 };
 
-export class Animation<T> {
+export interface Animation<T> {
+  frame(): T;
+  index(): number;
+  isComplete(): boolean;
+  update(deltaTime: number): void;
+  reset(): void;
+}
+
+export class FrameAnimation<T> implements Animation<T> {
   private frames: T[];
   private options: AnimationOptions;
   private frameIndex: number;
@@ -117,13 +125,6 @@ export class Animation<T> {
     return this;
   }
 
-  public resetWithFrames(frames: T[]): this {
-    this.reset();
-    this.frames = frames;
-
-    return this;
-  }
-
   private isCurrentFrameComplete(): boolean {
     // By default each frame will have 1 tick guaranteed
     const minFrameTime = 1 / this.options.fps;
@@ -161,4 +162,18 @@ export class Animation<T> {
   private isLastLoop(): boolean {
     return this.loopIndex + 1 === this.options.loop;
   }
+}
+
+export class NullAnimation<T> implements Animation<T> {
+  frame() {
+    return undefined;
+  }
+  index() {
+    return 0;
+  }
+  isComplete() {
+    return false;
+  }
+  update() {}
+  reset() {}
 }

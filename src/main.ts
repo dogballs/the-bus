@@ -1,9 +1,9 @@
-import { IW, IH, OW, OH, FPS, RS, COLOR } from './config';
+import { IW, IH, OW, OH, DRAW_FPS, RS, COLOR } from './config';
 import { loadImages } from './images';
 import { GameLoop } from './loop';
 import { inputController, resources } from './deps';
-
 import { defaultDudeState, drawDude, updateDude } from './dude';
+import { drawDebugGrid } from './debug';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -14,7 +14,7 @@ const ctx = canvas.getContext('2d');
 canvas.width = IW;
 canvas.height = IH;
 
-const loop = new GameLoop({ fps: FPS, onTick: tick });
+const loop = new GameLoop({ onTick: tick });
 
 const state = {
   dude: defaultDudeState,
@@ -24,7 +24,8 @@ function draw({ lastTime }) {
   ctx.clearRect(0, 0, IW, IH);
 
   drawBackground();
-  drawDebugGrid();
+
+  drawDebugGrid(ctx);
 
   drawDude(ctx, { state: state.dude });
 }
@@ -34,31 +35,20 @@ function drawBackground() {
   ctx.fillRect(0, 0, IW, IH);
 }
 
-function drawDebugGrid() {
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = 0.1;
+let lastDrawTime = 0;
+const drawInterval = 1 / DRAW_FPS;
 
-  for (let i = 0; i < OW; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i, 0);
-    ctx.lineTo(i, OH);
-    ctx.stroke();
-  }
-
-  for (let i = 0; i < OH; i++) {
-    ctx.beginPath();
-    ctx.moveTo(0, i);
-    ctx.lineTo(OW, i);
-    ctx.stroke();
-  }
-}
-
+// Throttle the drawing but run update loop at regular FPS not to miss input events
 function tick({ deltaTime, lastTime }) {
   inputController.update();
 
-  updateDude({ state: state.dude, deltaTime });
+  state.dude = updateDude({ state: state.dude, deltaTime });
 
-  draw({ lastTime });
+  const drawDeltaTime = lastTime - lastDrawTime;
+  if (drawDeltaTime > drawInterval) {
+    lastDrawTime = lastTime;
+    draw({ lastTime });
+  }
 }
 
 async function main() {
