@@ -42,7 +42,7 @@ const defaultNoteState: NoteState = {
   x: 10,
 };
 
-type ActIntroState = {
+export type ActIntroState = {
   dude: DudeState;
   arrow: ArrowState;
   punk: PunkState;

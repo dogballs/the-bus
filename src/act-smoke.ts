@@ -62,7 +62,7 @@ type TrashState = {
   status: 'full' | 'spot';
 };
 
-type ActSmokeState = {
+export type ActSmokeState = {
   trash: TrashState;
   smoker: SmokerState;
   dude: DudeState;

@@ -4,15 +4,18 @@ import { GameLoop } from './loop';
 import { inputController, resources } from './deps';
 import { drawDebugGrid } from './debug';
 import {
+  ActSmokeState,
   defaultActSmokeState,
   drawActSmoke,
   updateActSmoke,
 } from './act-smoke';
 import {
+  ActIntroState,
   defaultActIntroState,
   drawActIntro,
   updateActIntro,
 } from './act-intro';
+import { defaultMenuState, drawMenu, MenuState, updateMenu } from './menu';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -25,10 +28,14 @@ canvas.height = IH;
 
 const loop = new GameLoop({ onTick: tick });
 
-const state = {
-  actKind: 'smoke',
-  // act: defaultActSmokeState,
-  act: defaultActIntroState,
+type State = {
+  menu: MenuState;
+  act: ActIntroState | ActSmokeState;
+};
+
+const state: State = {
+  menu: defaultMenuState,
+  act: null,
 };
 
 function draw({ lastTime }) {
@@ -38,8 +45,17 @@ function draw({ lastTime }) {
 
   drawDebugGrid(ctx);
 
-  // drawActSmoke(ctx, { state: state.act, lastTime });
-  drawActIntro(ctx, { state: state.act, lastTime });
+  const { chosenIndex } = state.menu.act;
+  if (state.act !== null) {
+    if (chosenIndex === 0) {
+      drawActIntro(ctx, { state: state.act as ActIntroState, lastTime });
+    }
+    if (chosenIndex === 1) {
+      drawActSmoke(ctx, { state: state.act as ActSmokeState, lastTime });
+    }
+  }
+
+  drawMenu(ctx, { state: state.menu, lastTime });
 }
 
 function drawBackground() {
@@ -54,8 +70,27 @@ const drawInterval = 1 / DRAW_FPS;
 function tick({ deltaTime, lastTime }) {
   inputController.update();
 
-  // state.act = updateActSmoke({ state: state.act, deltaTime });
-  state.act = updateActIntro({ state: state.act, deltaTime });
+  let { act, menu } = state;
+
+  menu = updateMenu({ state: menu, deltaTime });
+
+  const { chosenIndex } = state.menu.act;
+
+  if (chosenIndex === 0) {
+    if (act === null) {
+      act = defaultActIntroState;
+    }
+    act = updateActIntro({ state: act as ActIntroState, deltaTime });
+  }
+  if (chosenIndex === 1) {
+    if (act === null) {
+      act = defaultActSmokeState;
+    }
+    act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
+  }
+
+  state.menu = menu;
+  state.act = act;
 
   const drawDeltaTime = lastTime - lastDrawTime;
   if (drawDeltaTime > drawInterval) {
