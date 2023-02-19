@@ -33,7 +33,7 @@ the bus
 - rush hour
 - fire hydrant
   - dog pissing
-- cat/dog/rat
+- cat/dog/rat/bird
 - newspaper
 - clock
 - sign

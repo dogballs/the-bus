@@ -1,9 +1,19 @@
 const IMAGES = {
+  // common - dude
   dudeWalk: 'dude-walk-Sheet.png',
   dudeSitting: 'dude-sitting.png',
   dudeCrouch: 'dude-crouch.png',
-  dudeTransformTrash: 'dude-transform-trash-Sheet.png',
+  dudeHeadBob: 'dude-head-bob.png',
+  // common - env
   bench: 'bench.png',
+  // common - ui
+  arrows: 'arrows.png',
+  // act - intro
+  punkWalk: 'punk-walk-Sheet.png',
+  punkListen: 'punk-listen-Sheet.png',
+  punkNotes: 'punk-notes.png',
+  // act - smoker
+  dudeTransformTrash: 'dude-transform-trash-Sheet.png',
   trashbin: 'trashbin.png',
   trashspot: 'trashshop.png',
   smokerWalk: 'smoker-walk-Sheet.png',

@@ -2,6 +2,7 @@ import { defaultDudeState, drawDude, DudeState, updateDude } from './dude';
 import { inputController, resources } from './deps';
 import { Animation, createSheet, Sheet, SheetAnimation } from './animation';
 import { InputControl } from './input';
+import { drawBench } from './bench';
 
 const SMOKER_WALK_SHEET = createSheet(16, 32, 3);
 const SMOKER_SIT_DOWN_SHEET = createSheet(24, 32, 1);
@@ -62,7 +63,6 @@ type TrashState = {
 };
 
 type ActSmokeState = {
-  status: 'intro';
   trash: TrashState;
   smoker: SmokerState;
   dude: DudeState;
@@ -71,17 +71,12 @@ type ActSmokeState = {
 };
 
 export const defaultActSmokeState: ActSmokeState = {
-  status: 'intro',
   trash: { status: 'full' },
   dude: { ...defaultDudeState, x: 28 },
   dudeTransform: defaultDudeTransformState,
   smoker: defaultSmokerState,
   cig: defaultCigState,
 };
-
-function drawBench(ctx) {
-  ctx.drawImage(resources.images.bench, 40, 34);
-}
 
 function drawTrashbin(ctx, { state }: { state: TrashState }) {
   if (state.status === 'spot') {
@@ -218,12 +213,15 @@ function drawDudeTransform(
   }
 }
 
-export function drawActSmoke(ctx, { state }) {
+export function drawActSmoke(
+  ctx,
+  { state, lastTime }: { state: ActSmokeState; lastTime: number },
+) {
   drawBench(ctx);
   drawTrashbin(ctx, { state: state.trash });
   drawSmoker(ctx, { state });
   drawCig(ctx, { state: state.cig, dude: state.dude });
-  drawDude(ctx, { state: state.dude });
+  drawDude(ctx, { state: state.dude, lastTime });
   drawDudeTransform(ctx, { state: state.dudeTransform, dude: state.dude });
 }
 

@@ -8,6 +8,11 @@ import {
   drawActSmoke,
   updateActSmoke,
 } from './act-smoke';
+import {
+  defaultActIntroState,
+  drawActIntro,
+  updateActIntro,
+} from './act-intro';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -22,7 +27,8 @@ const loop = new GameLoop({ onTick: tick });
 
 const state = {
   actKind: 'smoke',
-  act: defaultActSmokeState,
+  // act: defaultActSmokeState,
+  act: defaultActIntroState,
 };
 
 function draw({ lastTime }) {
@@ -30,9 +36,10 @@ function draw({ lastTime }) {
 
   drawBackground();
 
-  // drawDebugGrid(ctx);
+  drawDebugGrid(ctx);
 
-  drawActSmoke(ctx, { state: state.act });
+  // drawActSmoke(ctx, { state: state.act, lastTime });
+  drawActIntro(ctx, { state: state.act, lastTime });
 }
 
 function drawBackground() {
@@ -47,7 +54,8 @@ const drawInterval = 1 / DRAW_FPS;
 function tick({ deltaTime, lastTime }) {
   inputController.update();
 
-  state.act = updateActSmoke({ state: state.act, deltaTime });
+  // state.act = updateActSmoke({ state: state.act, deltaTime });
+  state.act = updateActIntro({ state: state.act, deltaTime });
 
   const drawDeltaTime = lastTime - lastDrawTime;
   if (drawDeltaTime > drawInterval) {

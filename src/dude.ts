@@ -14,6 +14,7 @@ type DudeStatus = 'none' | 'idle' | 'walking' | 'sitting' | 'crouch';
 
 export type DudeState = {
   status: DudeStatus;
+  head: 'static' | 'bobbing';
   animation: Animation<Sheet>;
   x: number;
   direction: number;
@@ -21,18 +22,26 @@ export type DudeState = {
 
 export const defaultDudeState: DudeState = {
   status: 'idle',
+  head: 'static',
   animation: new SheetAnimation(STAND_SHEET),
   x: 10,
   direction: 1,
 };
 
-export function drawDude(ctx, { state }: { state: DudeState }) {
-  const { x, direction, animation, status } = state;
+export function drawDude(
+  ctx,
+  { state, lastTime }: { state: DudeState; lastTime: number },
+) {
+  const { x, direction, animation, status, head } = state;
   if (status === 'none') {
     return;
   }
 
   const rx = Math.round(x);
+
+  const dstHeadHeight = 12;
+  let dstHeadOff = 0;
+  let srcHeadY = 12;
 
   let image;
   let destY;
@@ -44,10 +53,14 @@ export function drawDude(ctx, { state }: { state: DudeState }) {
     image = resources.images.dudeSitting;
     frame = SIT_SHEET[0];
     destY = 12;
+    srcHeadY = 14;
+    dstHeadOff = 2;
   } else if (status === 'crouch') {
     frame = CROUCH_SHEET[0];
     image = resources.images.dudeCrouch;
     destY = 13;
+    srcHeadY = 16;
+    dstHeadOff = 4;
   }
 
   const [frameX, frameY, frameWidth, frameHeight] = frame;
@@ -59,17 +72,36 @@ export function drawDude(ctx, { state }: { state: DudeState }) {
 
   const destX = direction === -1 ? 0 : rx - frameWidth / 2;
 
+  const headImage = resources.images.dudeHeadBob;
+
   ctx.drawImage(
     image,
     frameX,
-    frameY,
+    frameY + srcHeadY,
     frameWidth,
-    frameHeight,
+    frameHeight - dstHeadHeight,
     destX,
-    destY,
+    destY + srcHeadY,
     frameWidth,
-    frameHeight,
+    frameHeight - dstHeadHeight,
   );
+
+  if (head === 'static') {
+    ctx.drawImage(headImage, 0, 0, 16, 16, destX, destY + dstHeadOff, 16, 16);
+  } else if (head === 'bobbing') {
+    const srcX = Math.round(lastTime / 0.22) % 2 === 0 ? 0 : 16;
+    ctx.drawImage(
+      headImage,
+      srcX,
+      0,
+      16,
+      16,
+      destX,
+      destY + dstHeadOff,
+      16,
+      16,
+    );
+  }
 
   if (direction === -1) {
     ctx.scale(-1, 1);
