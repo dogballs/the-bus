@@ -15,7 +15,13 @@ import {
   drawActIntro,
   updateActIntro,
 } from './act-intro';
-import { defaultMenuState, drawMenu, MenuState, updateMenu } from './menu';
+import {
+  createDefaultMenuState,
+  drawMenu,
+  MenuState,
+  updateMenu,
+} from './menu';
+import { ActNullState, defaultActNull } from './act-null';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -30,12 +36,14 @@ const loop = new GameLoop({ onTick: tick });
 
 type State = {
   menu: MenuState;
-  act: ActIntroState | ActSmokeState;
+  act: ActNullState | ActIntroState | ActSmokeState;
+  actIndex: number;
 };
 
 const state: State = {
-  menu: defaultMenuState,
-  act: null,
+  menu: createDefaultMenuState({ status: 'intro' }),
+  act: defaultActNull,
+  actIndex: -1,
 };
 
 function draw({ lastTime }) {
@@ -43,19 +51,17 @@ function draw({ lastTime }) {
 
   drawBackground();
 
-  drawDebugGrid(ctx);
-
-  const { chosenIndex } = state.menu.act;
-  if (state.act !== null) {
-    if (chosenIndex === 0) {
-      drawActIntro(ctx, { state: state.act as ActIntroState, lastTime });
-    }
-    if (chosenIndex === 1) {
-      drawActSmoke(ctx, { state: state.act as ActSmokeState, lastTime });
-    }
+  const { actIndex } = state;
+  if (actIndex === 0) {
+    drawActIntro(ctx, { state: state.act as ActIntroState, lastTime });
+  }
+  if (actIndex === 1) {
+    drawActSmoke(ctx, { state: state.act as ActSmokeState, lastTime });
   }
 
   drawMenu(ctx, { state: state.menu, lastTime });
+
+  // drawDebugGrid(ctx);
 }
 
 function drawBackground() {
@@ -66,32 +72,41 @@ function drawBackground() {
 let lastDrawTime = 0;
 const drawInterval = 1 / DRAW_FPS;
 
-// Throttle the drawing but run update loop at regular FPS not to miss input events
 function tick({ deltaTime, lastTime }) {
   inputController.update();
 
-  let { act, menu } = state;
+  let { act, menu, actIndex } = state;
 
   menu = updateMenu({ state: menu, deltaTime });
 
-  const { chosenIndex } = state.menu.act;
+  const { selectedIndex } = state.menu.act;
+  if (selectedIndex != null && actIndex !== selectedIndex) {
+    actIndex = selectedIndex;
 
-  if (chosenIndex === 0) {
-    if (act === null) {
-      act = defaultActIntroState;
-    }
-    act = updateActIntro({ state: act as ActIntroState, deltaTime });
+    if (actIndex === 0) act = defaultActIntroState;
+    if (actIndex === 1) act = defaultActSmokeState;
   }
-  if (chosenIndex === 1) {
-    if (act === null) {
-      act = defaultActSmokeState;
+
+  if (state.menu.status === 'level' || state.menu.status === 'next') {
+    if (actIndex === 0) {
+      act = updateActIntro({ state: act as ActIntroState, deltaTime });
     }
-    act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
+    if (actIndex === 1) {
+      act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
+    }
+  }
+
+  if (act.status === 'ended' && menu.status === 'level') {
+    menu = createDefaultMenuState({
+      status: 'next',
+    });
   }
 
   state.menu = menu;
   state.act = act;
+  state.actIndex = actIndex;
 
+  // Throttle the drawing but run update loop at regular FPS not to miss input events
   const drawDeltaTime = lastTime - lastDrawTime;
   if (drawDeltaTime > drawInterval) {
     lastDrawTime = lastTime;

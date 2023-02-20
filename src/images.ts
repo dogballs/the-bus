@@ -8,6 +8,9 @@ const IMAGES = {
   bus: 'bus.png',
   // common - env
   bench: 'bench.png',
+  npc1Walk: 'npc1-walk-Sheet.png',
+  npc2Walk: 'npc2-walk-Sheet.png',
+  npc3Walk: 'npc3-walk-Sheet.png',
   // common - ui
   arrows: 'arrows.png',
   text: 'text.png',
@@ -23,6 +26,8 @@ const IMAGES = {
   smokerSitting: 'smoker-sitting-Sheet.png',
   smokerTransform: 'smoker-transform-Sheet.png',
   cig: 'smoke-Sheet.png',
+  // act - agent
+  agentWalk: 'agent-walk-Sheet.png',
 };
 
 export type ImageMap = {

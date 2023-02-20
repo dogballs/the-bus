@@ -1,11 +1,12 @@
 import { inputController, resources } from './deps';
 import { InputControl } from './input';
-import { stat } from 'copy-webpack-plugin/types/utils';
+import { Animation, createSheet, Sheet, SheetAnimation } from './animation';
+import { randomElement, randomNumber } from './random';
 
 const BUS_STOP_X = -30;
 
 type BusState = {
-  status: 'drive-in' | 'stop' | 'drive-out';
+  status: 'none' | 'drive-in' | 'stop' | 'drive-out';
   x: number;
 };
 
@@ -15,70 +16,70 @@ const defaultBusState: BusState = {
 };
 
 type ActState = {
-  status: 'none' | 'visible';
+  status: 'none' | 'visible' | 'chosen';
+  highlightedIndex: number;
   selectedIndex: number;
-  chosenIndex: number;
   acts: { id: number; isOpen: boolean }[];
 };
 
 const defaultActState: ActState = {
   status: 'none',
-  selectedIndex: 0,
-  chosenIndex: undefined,
+  highlightedIndex: 0,
+  selectedIndex: undefined,
   acts: [
     { id: 1, isOpen: true },
     { id: 2, isOpen: false },
   ],
 };
 
+type CrowdState = {
+  status: 'none' | 'active' | 'done';
+  boys: {
+    kind: 'npc1' | 'npc2' | 'npc3' | 'agent' | 'smoker';
+    x: number;
+    speed: number;
+    direction: number;
+    animation: Animation<Sheet>;
+  }[];
+};
+const defaultCrowdState: CrowdState = { status: 'none', boys: [] };
+
 export type MenuState = {
-  isOpen: boolean;
+  status: 'intro' | 'level' | 'next';
   bus: BusState;
   act: ActState;
+  crowd: CrowdState;
 };
-export const defaultMenuState: MenuState = {
-  isOpen: true,
-  bus: defaultBusState,
-  act: defaultActState,
-};
-
-export function drawMenu(
-  ctx,
-  { state, lastTime }: { state: MenuState; lastTime: number },
-) {
-  drawBus(ctx, { state: state.bus });
-  drawAct(ctx, { state: state.act, lastTime });
+export function createDefaultMenuState({
+  status,
+  highlightedIndex = 0,
+}: {
+  status: 'intro' | 'level' | 'next';
+  highlightedIndex?: number;
+}): MenuState {
+  return {
+    status,
+    bus: { ...defaultBusState },
+    act: {
+      ...defaultActState,
+      highlightedIndex,
+    },
+    crowd: { ...defaultCrowdState, boys: [] },
+  };
 }
 
 function drawBus(ctx, { state }: { state: BusState }) {
-  const { x } = state;
+  const { x, status } = state;
+
+  if (status === 'none') {
+    return;
+  }
 
   const rx = Math.round(x);
 
   const image = resources.images.bus;
 
   ctx.drawImage(image, rx, -9);
-}
-
-function drawAct(
-  ctx,
-  { state, lastTime }: { state: ActState; lastTime: number },
-) {
-  const { selectedIndex, acts, status } = state;
-
-  if (status === 'none') {
-    return;
-  }
-
-  const image = resources.images.text;
-
-  for (const [index, act] of acts.entries()) {
-    ctx.drawImage(image, index * 4, 0, 4, 5, index * 7 + 28, 26, 4, 5);
-
-    if (selectedIndex === index && Math.round(lastTime / 0.2) % 2 === 0) {
-      ctx.drawImage(image, 0, 5, 7, 8, index * 7 + 28 - 2, 24, 7, 8);
-    }
-  }
 }
 
 function updateBus({
@@ -89,6 +90,10 @@ function updateBus({
   deltaTime: number;
 }): BusState {
   let { x, status } = state;
+
+  if (status === 'none') {
+    return state;
+  }
 
   if (status === 'drive-in') {
     let speed = 40;
@@ -127,10 +132,31 @@ function updateBus({
   };
 }
 
-function updateAct({ state }: { state: ActState }): ActState {
-  let { selectedIndex, chosenIndex, acts, status } = state;
+function drawAct(
+  ctx,
+  { state, lastTime }: { state: ActState; lastTime: number },
+) {
+  const { highlightedIndex, acts, status } = state;
 
-  if (status === 'none') {
+  if (status === 'none' || status === 'chosen') {
+    return;
+  }
+
+  const image = resources.images.text;
+
+  for (const [index, act] of acts.entries()) {
+    ctx.drawImage(image, index * 4, 0, 4, 5, index * 7 + 28, 26, 4, 5);
+
+    if (highlightedIndex === index && Math.round(lastTime / 0.2) % 2 === 0) {
+      ctx.drawImage(image, 0, 5, 7, 8, index * 7 + 28 - 2, 24, 7, 8);
+    }
+  }
+}
+
+function updateAct({ state }: { state: ActState }): ActState {
+  let { highlightedIndex, selectedIndex, acts, status } = state;
+
+  if (status === 'none' || status === 'chosen') {
     return state;
   }
 
@@ -138,21 +164,141 @@ function updateAct({ state }: { state: ActState }): ActState {
   const isRight = inputController.isDown(InputControl.Right);
   const isSelect = inputController.isDown(InputControl.Select);
 
-  if (isLeft && selectedIndex > 0) {
-    selectedIndex -= 1;
+  if (isLeft && highlightedIndex > 0) {
+    highlightedIndex -= 1;
   }
-  if (isRight && selectedIndex < acts.length - 1) {
-    selectedIndex += 1;
+  if (isRight && highlightedIndex < acts.length - 1) {
+    highlightedIndex += 1;
   }
   if (isSelect) {
-    chosenIndex = selectedIndex;
+    selectedIndex = highlightedIndex;
+    status = 'chosen';
   }
 
   return {
     ...state,
+    highlightedIndex,
     selectedIndex,
-    chosenIndex,
+    status,
   };
+}
+
+function drawCrowd(ctx, { state }: { state: CrowdState }) {
+  const { status, boys } = state;
+
+  if (status === 'none' || status === 'done') {
+    return;
+  }
+
+  for (const boy of boys) {
+    const { x, direction, animation, kind } = boy;
+
+    let image;
+    if (kind === 'npc1') {
+      image = resources.images.npc1Walk;
+    } else if (kind === 'npc2') {
+      image = resources.images.npc2Walk;
+    } else if (kind === 'npc3') {
+      image = resources.images.npc3Walk;
+    } else if (kind === 'agent') {
+      image = resources.images.agentWalk;
+    } else if (kind === 'smoker') {
+      image = resources.images.smokerWalk;
+    }
+
+    const rx = Math.round(x);
+
+    const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
+    if (direction === -1) {
+      ctx.translate(rx + frameWidth / 2, 0);
+      ctx.scale(-1, 1);
+    }
+    const destX = direction === -1 ? 0 : rx - frameWidth / 2;
+
+    ctx.drawImage(
+      image,
+      frameX,
+      frameY,
+      frameWidth,
+      frameHeight,
+      destX,
+      12,
+      frameWidth,
+      frameHeight,
+    );
+
+    if (direction === -1) {
+      ctx.scale(-1, 1);
+      ctx.translate(-(rx + frameWidth / 2), 0);
+    }
+  }
+}
+
+function updateCrowd({
+  state,
+  deltaTime,
+}: {
+  state: CrowdState;
+  deltaTime: number;
+}): CrowdState {
+  let { status, boys } = state;
+  if (status === 'none' || status === 'done') {
+    return state;
+  }
+
+  const BOYS_COUNT = 30;
+  if (boys.length === 0) {
+    for (let i = 0; i < BOYS_COUNT; i++) {
+      boys.push({
+        kind: randomElement(['npc1', 'npc2', 'npc3', 'agent', 'smoker']),
+        x: randomNumber(20, 40),
+        speed: randomNumber(15, 30),
+        direction: randomElement([1, -1]),
+        animation: new SheetAnimation(createSheet(16, 32, 3), {
+          loop: true,
+          delay: randomElement([0.08, 0.12, 0.16]),
+        }),
+      });
+    }
+  }
+
+  boys = boys.map((boy) => {
+    let { x, animation, speed, direction } = boy;
+
+    const xChange = speed * deltaTime;
+    x += xChange * direction;
+
+    animation.update(deltaTime);
+
+    return {
+      ...boy,
+      x,
+      animation,
+    };
+  });
+
+  const allDone = boys.every((boy) => {
+    return boy.x < -10 || boy.x > 90;
+  });
+
+  if (allDone) {
+    status = 'done';
+  }
+
+  return {
+    ...state,
+    boys,
+    status,
+  };
+}
+
+export function drawMenu(
+  ctx,
+  { state, lastTime }: { state: MenuState; lastTime: number },
+) {
+  drawCrowd(ctx, { state: state.crowd });
+  drawBus(ctx, { state: state.bus });
+  drawAct(ctx, { state: state.act, lastTime });
 }
 
 export function updateMenu({
@@ -162,22 +308,33 @@ export function updateMenu({
   state: MenuState;
   deltaTime: number;
 }) {
-  let { bus, act } = state;
+  let { bus, act, crowd, status } = state;
 
   bus = updateBus({ state: bus, deltaTime });
   act = updateAct({ state: act });
+  crowd = updateCrowd({ state: crowd, deltaTime });
 
-  if (bus.x === BUS_STOP_X) {
-    act.status = 'visible';
-  }
-  if (act.chosenIndex != null) {
-    act.status = 'none';
+  if (act.status === 'chosen') {
     bus.status = 'drive-out';
+  }
+  if (bus.status === 'stop') {
+    act.status = 'visible';
+    if (status === 'next') {
+      status = 'intro';
+    }
+  }
+  if (crowd.status === 'done') {
+    status = 'level';
+  }
+  if (bus.x < -70) {
+    crowd.status = 'active';
   }
 
   return {
     ...state,
     bus,
     act,
+    crowd,
+    status,
   };
 }

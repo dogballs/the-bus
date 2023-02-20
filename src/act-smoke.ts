@@ -31,7 +31,7 @@ export type SmokerState = {
 const defaultSmokerState: SmokerState = {
   status: 'walk-to-sit',
   animation: new SheetAnimation(SMOKER_WALK_SHEET, { loop: true, delay: 0.16 }),
-  x: 40,
+  x: 32,
 };
 
 type CigState = {
@@ -47,7 +47,7 @@ const defaultCigState: CigState = {
 };
 
 type DudeTransformState = {
-  status: 'none' | 'active';
+  status: 'none' | 'active' | 'done';
   animation: Animation<Sheet>;
   x: number;
 };
@@ -63,6 +63,7 @@ type TrashState = {
 };
 
 export type ActSmokeState = {
+  status: 'active' | 'ended';
   trash: TrashState;
   smoker: SmokerState;
   dude: DudeState;
@@ -71,8 +72,9 @@ export type ActSmokeState = {
 };
 
 export const defaultActSmokeState: ActSmokeState = {
+  status: 'active',
   trash: { status: 'full' },
-  dude: { ...defaultDudeState, x: 28 },
+  dude: { ...defaultDudeState, x: 22 },
   dudeTransform: defaultDudeTransformState,
   smoker: defaultSmokerState,
   cig: defaultCigState,
@@ -378,10 +380,14 @@ function updateDudeTransform({
   }
 
   animation.update(deltaTime);
+  if (animation.isComplete()) {
+    status = 'done';
+  }
 
   return {
     ...state,
     animation,
+    status,
   };
 }
 
@@ -392,7 +398,7 @@ export function updateActSmoke({
   state: ActSmokeState;
   deltaTime: number;
 }) {
-  let { smoker, dude, dudeTransform, cig, trash } = state;
+  let { smoker, dude, dudeTransform, cig, trash, status } = state;
 
   smoker = updateSmoker({ state: smoker, deltaTime, dude });
   cig = updateCig({ state: cig, deltaTime });
@@ -455,6 +461,10 @@ export function updateActSmoke({
     }
   }
 
+  if (dudeTransform.status === 'done') {
+    status = 'ended';
+  }
+
   return {
     ...state,
     trash,
@@ -462,5 +472,6 @@ export function updateActSmoke({
     dude,
     dudeTransform,
     cig,
+    status,
   };
 }

@@ -43,6 +43,7 @@ const defaultNoteState: NoteState = {
 };
 
 export type ActIntroState = {
+  status: 'active' | 'ended';
   dude: DudeState;
   arrow: ArrowState;
   punk: PunkState;
@@ -50,6 +51,7 @@ export type ActIntroState = {
 };
 
 export const defaultActIntroState: ActIntroState = {
+  status: 'active',
   dude: { ...defaultDudeState, x: 18 },
   arrow: defaultArrowState,
   punk: defaultPunkState,
@@ -256,7 +258,7 @@ export function updateActIntro({
   state: ActIntroState;
   deltaTime: number;
 }) {
-  let { dude, arrow, punk, note } = state;
+  let { status, dude, arrow, punk, note } = state;
 
   const isUp = inputController.isDown(InputControl.Up);
   const isDown = inputController.isDown(InputControl.Down);
@@ -290,8 +292,14 @@ export function updateActIntro({
     dude.head = 'bobbing';
   }
 
+  const isEndingRange = dude.x < 30;
+  if (dude.head === 'bobbing' && isEndingRange) {
+    status = 'ended';
+  }
+
   return {
     ...state,
+    status,
     dude,
     arrow,
     punk,
