@@ -2,7 +2,13 @@ import { drawBench } from './bench';
 import { defaultDudeState, drawDude, DudeState, updateDude } from './dude';
 import { inputController, resources } from './deps';
 import { InputControl } from './input';
-import { createSheet, Sheet, Animation, SheetAnimation } from './animation';
+import {
+  createSheet,
+  Sheet,
+  Animation,
+  SheetAnimation,
+  Timer,
+} from './animation';
 import { OW } from './config';
 
 const PUNK_WALK_ANIMATION = new SheetAnimation(createSheet(12, 32, 3), {
@@ -44,6 +50,7 @@ const defaultNoteState: NoteState = {
 
 export type ActIntroState = {
   status: 'active' | 'ended';
+  endTimer: Timer;
   dude: DudeState;
   arrow: ArrowState;
   punk: PunkState;
@@ -52,6 +59,7 @@ export type ActIntroState = {
 
 export const defaultActIntroState: ActIntroState = {
   status: 'active',
+  endTimer: new Timer(5),
   dude: { ...defaultDudeState, x: 18 },
   arrow: defaultArrowState,
   punk: defaultPunkState,
@@ -258,7 +266,7 @@ export function updateActIntro({
   state: ActIntroState;
   deltaTime: number;
 }) {
-  let { status, dude, arrow, punk, note } = state;
+  let { status, dude, arrow, punk, note, endTimer } = state;
 
   const isUp = inputController.isDown(InputControl.Up);
   const isDown = inputController.isDown(InputControl.Down);
@@ -294,7 +302,10 @@ export function updateActIntro({
 
   const isEndingRange = dude.x < 30;
   if (dude.head === 'bobbing' && isEndingRange) {
-    status = 'ended';
+    endTimer.update(deltaTime);
+    if (endTimer.isDone()) {
+      status = 'ended';
+    }
   }
 
   return {
@@ -304,5 +315,6 @@ export function updateActIntro({
     arrow,
     punk,
     note,
+    endTimer,
   };
 }

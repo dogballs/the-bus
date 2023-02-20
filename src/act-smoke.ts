@@ -1,6 +1,12 @@
 import { defaultDudeState, drawDude, DudeState, updateDude } from './dude';
 import { inputController, resources } from './deps';
-import { Animation, createSheet, Sheet, SheetAnimation } from './animation';
+import {
+  Animation,
+  createSheet,
+  Sheet,
+  SheetAnimation,
+  Timer,
+} from './animation';
 import { InputControl } from './input';
 import { drawBench } from './bench';
 
@@ -64,6 +70,7 @@ type TrashState = {
 
 export type ActSmokeState = {
   status: 'active' | 'ended';
+  endTimer: Timer;
   trash: TrashState;
   smoker: SmokerState;
   dude: DudeState;
@@ -73,6 +80,7 @@ export type ActSmokeState = {
 
 export const defaultActSmokeState: ActSmokeState = {
   status: 'active',
+  endTimer: new Timer(5),
   trash: { status: 'full' },
   dude: { ...defaultDudeState, x: 22 },
   dudeTransform: defaultDudeTransformState,
@@ -398,7 +406,7 @@ export function updateActSmoke({
   state: ActSmokeState;
   deltaTime: number;
 }) {
-  let { smoker, dude, dudeTransform, cig, trash, status } = state;
+  let { smoker, dude, dudeTransform, cig, trash, status, endTimer } = state;
 
   smoker = updateSmoker({ state: smoker, deltaTime, dude });
   cig = updateCig({ state: cig, deltaTime });
@@ -462,7 +470,10 @@ export function updateActSmoke({
   }
 
   if (dudeTransform.status === 'done') {
-    status = 'ended';
+    endTimer.update(deltaTime);
+    if (endTimer.isDone()) {
+      status = 'ended';
+    }
   }
 
   return {
@@ -473,5 +484,6 @@ export function updateActSmoke({
     dudeTransform,
     cig,
     status,
+    endTimer,
   };
 }
