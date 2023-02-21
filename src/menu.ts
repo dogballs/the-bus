@@ -45,7 +45,7 @@ type CrowdState = {
 const defaultCrowdState: CrowdState = { status: 'none', boys: [] };
 
 export type MenuState = {
-  status: 'intro' | 'level' | 'next';
+  status: 'intro' | 'bus' | 'level' | 'next';
   bus: BusState;
   act: ActState;
   crowd: CrowdState;
@@ -54,7 +54,7 @@ export function createDefaultMenuState({
   status,
   highlightedIndex = 0,
 }: {
-  status: 'intro' | 'level' | 'next';
+  status: 'intro' | 'bus' | 'level' | 'next';
   highlightedIndex?: number;
 }): MenuState {
   return {
@@ -315,12 +315,13 @@ export function updateMenu({
   crowd = updateCrowd({ state: crowd, deltaTime });
 
   if (act.status === 'chosen') {
+    status = 'intro';
     bus.status = 'drive-out';
   }
   if (bus.status === 'stop') {
     act.status = 'visible';
     if (status === 'next') {
-      status = 'intro';
+      status = 'bus';
     }
   }
   if (crowd.status === 'done') {

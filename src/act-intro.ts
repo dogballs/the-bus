@@ -1,5 +1,10 @@
 import { drawBench } from './bench';
-import { defaultDudeState, drawDude, DudeState, updateDude } from './dude';
+import {
+  createDefaultDudeState,
+  drawDude,
+  DudeState,
+  updateDude,
+} from './dude';
 import { inputController, resources } from './deps';
 import { InputControl } from './input';
 import {
@@ -15,7 +20,11 @@ const PUNK_WALK_ANIMATION = new SheetAnimation(createSheet(12, 32, 3), {
   loop: true,
   delay: 0.2,
 });
-const PUNK_LISTEN_ANIMATION = new SheetAnimation(createSheet(12, 32, 2), {
+const PUNK_LISTEN_ANIMATION = new SheetAnimation(createSheet(24, 32, 2), {
+  loop: true,
+  delay: 0.2,
+});
+const PUNK_HANDING_ANIMATION = new SheetAnimation(createSheet(24, 32, 2, 2), {
   loop: true,
   delay: 0.2,
 });
@@ -24,47 +33,66 @@ const PUNK_WALK_SPEED = 6;
 const NOTE_SPEED = 4;
 
 type ArrowState = { status: 'walk' | 'sit' | 'none' };
-const defaultArrowState: ArrowState = { status: 'walk' };
+const createDefaultArrowState = (): ArrowState => ({ status: 'walk' });
 
 type PunkState = {
-  status: 'off' | 'walk-in' | 'listen' | 'walk-out';
+  status: 'off' | 'walk-in' | 'listen' | 'walk-out' | 'handing' | 'listen-end';
   x: number;
   direction: number;
   animation: Animation<Sheet>;
 };
-const defaultPunkState: PunkState = {
+const createDefaultPunkState = (): PunkState => ({
   status: 'off',
   x: -15,
   direction: 1,
-  animation: PUNK_WALK_ANIMATION,
-};
+  animation: PUNK_WALK_ANIMATION.reset(),
+});
 
 type NoteState = {
   status: 'none' | 'playing';
+  backwards: boolean;
   x: number;
 };
-const defaultNoteState: NoteState = {
+const createDefaultNoteState = (): NoteState => ({
   status: 'none',
+  backwards: false,
   x: 10,
+});
+
+type DudeSuckedState = {
+  status: 'none' | 'timer' | 'active' | 'done';
+  animation: Animation<Sheet>;
+  timer: Timer;
 };
+const createDefaultDudeSuckedState = (): DudeSuckedState => ({
+  status: 'none',
+  animation: new SheetAnimation(createSheet(16, 32, 11), { delay: 0.3 }),
+  timer: new Timer(4),
+});
 
 export type ActIntroState = {
   status: 'active' | 'ended';
   endTimer: Timer;
+  bobbingTimer: Timer;
   dude: DudeState;
   arrow: ArrowState;
   punk: PunkState;
   note: NoteState;
+  dudeSucked: DudeSuckedState;
 };
 
-export const defaultActIntroState: ActIntroState = {
-  status: 'active',
-  endTimer: new Timer(5),
-  dude: { ...defaultDudeState, x: 18 },
-  arrow: defaultArrowState,
-  punk: defaultPunkState,
-  note: { ...defaultNoteState },
-};
+export function createDefaultActIntroState(): ActIntroState {
+  return {
+    status: 'active',
+    endTimer: new Timer(3),
+    bobbingTimer: new Timer(2),
+    dude: { ...createDefaultDudeState(), x: 18 },
+    dudeSucked: createDefaultDudeSuckedState(),
+    arrow: createDefaultArrowState(),
+    punk: createDefaultPunkState(),
+    note: createDefaultNoteState(),
+  };
+}
 
 export function drawActIntro(
   ctx,
@@ -75,6 +103,7 @@ export function drawActIntro(
   drawPunk(ctx, { state: state.punk });
   drawNote(ctx, { state: state.note });
   drawDude(ctx, { state: state.dude, lastTime });
+  drawDudeSucked(ctx, { state: state.dudeSucked });
 }
 
 function drawArrow(
@@ -102,25 +131,81 @@ function drawArrow(
   }
 }
 
+function drawDudeSucked(ctx, { state }: { state: DudeSuckedState }) {
+  const { status, animation } = state;
+  if (status === 'none' || status === 'timer' || status === 'done') {
+    return;
+  }
+
+  const image = resources.images.dudeSucked;
+  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
+
+  ctx.drawImage(
+    image,
+    frameX,
+    frameY,
+    frameWidth,
+    frameHeight,
+    25,
+    10,
+    frameWidth,
+    frameHeight,
+  );
+}
+
+function updateDudeSucked({
+  state,
+  deltaTime,
+}: {
+  state: DudeSuckedState;
+  deltaTime: number;
+}): DudeSuckedState {
+  let { status, timer, animation } = state;
+
+  if (status === 'none' || status === 'done') {
+    return state;
+  }
+  if (status === 'timer') {
+    timer.update(deltaTime);
+    if (timer.isDone()) {
+      status = 'active';
+    }
+  }
+
+  if (status === 'active') {
+    animation.update(deltaTime);
+    if (animation.isComplete()) {
+      status = 'done';
+    }
+  }
+
+  return { ...state, status };
+}
+
 function drawPunk(ctx, { state }: { state: PunkState }) {
   const { x, direction, animation, status } = state;
   const rx = Math.round(x);
 
+  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
+
   let image;
+  let destX = direction === -1 ? 0 : rx - frameWidth / 2;
+
   if (status === 'walk-in' || status === 'walk-out' || status === 'off') {
     image = resources.images.punkWalk;
-  } else if (status === 'listen') {
+  } else if (
+    status === 'listen' ||
+    status === 'handing' ||
+    status === 'listen-end'
+  ) {
     image = resources.images.punkListen;
+    destX += 6;
   }
-
-  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
 
   if (direction === -1) {
     ctx.translate(rx + frameWidth / 2, 0);
     ctx.scale(-1, 1);
   }
-
-  const destX = direction === -1 ? 0 : rx - frameWidth / 2;
 
   ctx.drawImage(
     image,
@@ -137,50 +222,6 @@ function drawPunk(ctx, { state }: { state: PunkState }) {
   if (direction === -1) {
     ctx.scale(-1, 1);
     ctx.translate(-(rx + frameWidth / 2), 0);
-  }
-}
-
-function drawNote(ctx, { state }: { state: NoteState }) {
-  const { x, status } = state;
-
-  if (status === 'none') {
-    return;
-  }
-
-  const rx = Math.round(x);
-
-  const image = resources.images.punkNotes;
-
-  const step = 8;
-  const baseY = 6;
-
-  function drawOne(x) {
-    const yOff = x % 3;
-    if (x < 20) return;
-    ctx.drawImage(image, 1, 1, 2, 6, x, baseY + yOff, 2, 6);
-  }
-
-  function drawTwo(x) {
-    const yOff = x % 3;
-    if (x < 20) return;
-    ctx.drawImage(image, 6, 1, 2, 6, x, baseY + yOff, 2, 6);
-  }
-
-  function drawThree(x) {
-    const yOff = x % 3;
-    if (x < 20) return;
-    ctx.drawImage(image, 11, 1, 2, 6, x, baseY + yOff, 2, 6);
-  }
-
-  for (let i = 0; i < 33; i++) {
-    const index = i % 3;
-    const rstep = step * i;
-
-    if (rx > rstep) {
-      index === 0 && drawOne(rx - rstep);
-      index === 1 && drawTwo(rx - rstep);
-      index === 2 && drawThree(rx - rstep);
-    }
   }
 }
 
@@ -213,14 +254,22 @@ function updatePunk({
     direction = -1;
     animation.update(deltaTime);
 
-    if (x < defaultPunkState.x) {
-      x = defaultPunkState.x;
+    if (x < createDefaultPunkState().x) {
+      x = createDefaultPunkState().x;
       direction = 1;
       status = 'off';
     }
   }
 
   if (status === 'listen') {
+    animation.update(deltaTime);
+  }
+
+  if (status === 'handing') {
+    animation.update(deltaTime);
+  }
+
+  if (status === 'listen-end') {
     animation.update(deltaTime);
   }
 
@@ -233,6 +282,50 @@ function updatePunk({
   };
 }
 
+function drawNote(ctx, { state }: { state: NoteState }) {
+  const { x, status } = state;
+
+  if (status === 'none') {
+    return;
+  }
+
+  const rx = Math.round(x);
+
+  const image = resources.images.punkNotes;
+
+  const step = 8;
+  const baseY = 5;
+
+  function drawOne(x) {
+    const yOff = x % 3;
+    if (x < 18) return;
+    ctx.drawImage(image, 1, 1, 4, 6, x, baseY + yOff, 4, 6);
+  }
+
+  function drawTwo(x) {
+    const yOff = x % 3;
+    if (x < 18) return;
+    ctx.drawImage(image, 6, 1, 4, 6, x, baseY + yOff, 4, 6);
+  }
+
+  function drawThree(x) {
+    const yOff = x % 3;
+    if (x < 18) return;
+    ctx.drawImage(image, 11, 1, 4, 6, x, baseY + yOff, 4, 6);
+  }
+
+  for (let i = 0; i < 33; i++) {
+    const index = i % 3;
+    const rstep = step * i;
+
+    if (rx > rstep) {
+      index === 0 && drawOne(rx - rstep);
+      index === 1 && drawTwo(rx - rstep);
+      index === 2 && drawThree(rx - rstep);
+    }
+  }
+}
+
 function updateNote({
   state,
   deltaTime,
@@ -240,13 +333,16 @@ function updateNote({
   state: NoteState;
   deltaTime: number;
 }): NoteState {
-  let { x, status } = state;
+  let { x, status, backwards } = state;
 
   if (status === 'none') {
     return state;
   }
 
-  const xChange = NOTE_SPEED * deltaTime;
+  let xChange = NOTE_SPEED * deltaTime;
+  if (backwards) {
+    xChange *= -4;
+  }
 
   x += xChange;
   if (x > OW * 3) {
@@ -266,7 +362,8 @@ export function updateActIntro({
   state: ActIntroState;
   deltaTime: number;
 }) {
-  let { status, dude, arrow, punk, note, endTimer } = state;
+  let { status, dude, arrow, punk, note, dudeSucked, endTimer, bobbingTimer } =
+    state;
 
   const isUp = inputController.isDown(InputControl.Up);
   const isDown = inputController.isDown(InputControl.Down);
@@ -274,6 +371,7 @@ export function updateActIntro({
   dude = updateDude({ state: dude, deltaTime });
   punk = updatePunk({ state: punk, deltaTime });
   note = updateNote({ state: note, deltaTime });
+  dudeSucked = updateDudeSucked({ state: dudeSucked, deltaTime });
 
   if (dude.x !== state.dude.x && arrow.status === 'walk') {
     arrow.status = 'sit';
@@ -290,18 +388,47 @@ export function updateActIntro({
 
     if (dude.head !== 'bobbing') {
       punk.status = 'walk-out';
-      note = { ...defaultNoteState };
+      note = createDefaultNoteState();
     }
   }
   if (punk.status === 'listen') {
     note.status = 'playing';
   }
-  if (note.x > dude.x) {
+  if (note.x > dude.x && dude.status !== 'none') {
     dude.head = 'bobbing';
   }
 
-  const isEndingRange = dude.x < 30;
-  if (dude.head === 'bobbing' && isEndingRange) {
+  if (dude.head === 'bobbing' && dude.status !== 'none') {
+    bobbingTimer.update(deltaTime);
+
+    if (bobbingTimer.isDone() && punk.status !== 'handing') {
+      punk.status = 'handing';
+      punk.animation = PUNK_HANDING_ANIMATION.reset();
+    }
+
+    if (punk.status === 'handing') {
+      if (dude.x < 32) {
+        dude.x = 32;
+        dude.hand = 'holding';
+        dude.status = 'idle';
+        dude.walking = 'blocked';
+        dudeSucked.status = 'timer';
+      }
+      if (dudeSucked.status === 'active') {
+        note.backwards = true;
+        dude.status = 'none';
+        dude.head = 'static';
+      }
+    }
+  }
+
+  if (dudeSucked.status === 'done' && punk.status !== 'listen-end') {
+    punk.status = 'listen-end';
+    punk.animation = PUNK_LISTEN_ANIMATION.reset();
+    note.status = 'none';
+  }
+
+  if (punk.status === 'listen-end') {
     endTimer.update(deltaTime);
     if (endTimer.isDone()) {
       status = 'ended';
@@ -314,6 +441,7 @@ export function updateActIntro({
     dude,
     arrow,
     punk,
+    dudeSucked,
     note,
     endTimer,
   };

@@ -3,10 +3,11 @@ import { resources, inputController } from './deps';
 import { InputControl } from './input';
 import { OW } from './config';
 
-const STAND_SHEET = createSheet(16, 32, 1);
 const WALK_SHEET = createSheet(16, 32, 3);
 const SIT_SHEET = createSheet(16, 32, 1);
 const CROUCH_SHEET = createSheet(16, 32, 1);
+
+const STAND_ANIMATION = new SheetAnimation(createSheet(16, 32, 1));
 
 const WALK_SPEED = 16;
 
@@ -15,24 +16,28 @@ type DudeStatus = 'none' | 'idle' | 'walking' | 'sitting' | 'crouch';
 export type DudeState = {
   status: DudeStatus;
   head: 'static' | 'bobbing';
+  hand: 'static' | 'holding';
+  walking: 'active' | 'blocked';
   animation: Animation<Sheet>;
   x: number;
   direction: number;
 };
 
-export const defaultDudeState: DudeState = {
+export const createDefaultDudeState = (): DudeState => ({
   status: 'idle',
   head: 'static',
-  animation: new SheetAnimation(STAND_SHEET),
+  hand: 'static',
+  walking: 'active',
+  animation: STAND_ANIMATION,
   x: 10,
   direction: 1,
-};
+});
 
 export function drawDude(
   ctx,
   { state, lastTime }: { state: DudeState; lastTime: number },
 ) {
-  const { x, direction, animation, status, head } = state;
+  const { x, direction, animation, status, head, hand } = state;
   if (status === 'none') {
     return;
   }
@@ -40,7 +45,8 @@ export function drawDude(
   const rx = Math.round(x);
 
   const dstHeadHeight = 12;
-  let dstHeadOff = 0;
+  let dstHeadYOff = 0;
+  let dstHandYOff = 0;
   let srcHeadY = 12;
 
   let image;
@@ -49,18 +55,21 @@ export function drawDude(
   if (status === 'idle' || status === 'walking') {
     image = resources.images.dudeWalk;
     destY = 11;
+    dstHandYOff = 13;
   } else if (status === 'sitting') {
     image = resources.images.dudeSitting;
     frame = SIT_SHEET[0];
     destY = 12;
     srcHeadY = 14;
-    dstHeadOff = 2;
+    dstHeadYOff = 2;
+    dstHandYOff = 15;
   } else if (status === 'crouch') {
     frame = CROUCH_SHEET[0];
     image = resources.images.dudeCrouch;
     destY = 13;
     srcHeadY = 16;
-    dstHeadOff = 4;
+    dstHeadYOff = 4;
+    dstHandYOff = 17;
   }
 
   const [frameX, frameY, frameWidth, frameHeight] = frame;
@@ -87,7 +96,7 @@ export function drawDude(
   );
 
   if (head === 'static') {
-    ctx.drawImage(headImage, 0, 0, 16, 16, destX, destY + dstHeadOff, 16, 16);
+    ctx.drawImage(headImage, 0, 0, 16, 16, destX, destY + dstHeadYOff, 16, 16);
   } else if (head === 'bobbing') {
     const srcX = Math.round(lastTime / 0.22) % 2 === 0 ? 0 : 16;
     ctx.drawImage(
@@ -97,10 +106,19 @@ export function drawDude(
       16,
       16,
       destX,
-      destY + dstHeadOff,
+      destY + dstHeadYOff,
       16,
       16,
     );
+  }
+
+  const handImage = resources.images.dudeHand;
+  if (hand === 'static') {
+    ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
+    ctx.drawImage(handImage, 0, 0, 1, 8, destX + 10, destY + dstHandYOff, 1, 8);
+  } else if (hand === 'holding') {
+    ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
+    ctx.drawImage(handImage, 2, 0, 6, 8, destX + 10, destY + dstHandYOff, 6, 8);
   }
 
   if (direction === -1) {
@@ -116,7 +134,7 @@ export function updateDude({
   state: DudeState;
   deltaTime: number;
 }): DudeState {
-  let { status, x, direction, animation } = state;
+  let { status, x, direction, animation, walking } = state;
 
   if (status === 'none' || status === 'sitting' || status === 'crouch') {
     return state;
@@ -127,28 +145,30 @@ export function updateDude({
 
   const xChange = WALK_SPEED * deltaTime;
 
-  if (isLeft) {
-    x -= xChange;
-    status = 'walking';
-    direction = -1;
-  } else if (isRight) {
-    x += xChange;
-    status = 'walking';
-    direction = 1;
-  } else {
-    status = 'idle';
-  }
-  x = Math.max(x, 0);
-  x = Math.min(x, OW);
+  if (walking === 'active') {
+    if (isLeft) {
+      x -= xChange;
+      status = 'walking';
+      direction = -1;
+    } else if (isRight) {
+      x += xChange;
+      status = 'walking';
+      direction = 1;
+    } else {
+      status = 'idle';
+    }
+    x = Math.max(x, 0);
+    x = Math.min(x, OW);
 
-  if (status === 'walking' && state.status !== 'walking') {
-    animation = new SheetAnimation(WALK_SHEET, { loop: true, delay: 0.12 });
-  }
-  if (status === 'idle' && state.status !== 'idle') {
-    animation = new SheetAnimation(STAND_SHEET);
+    if (status === 'walking' && state.status !== 'walking') {
+      animation = new SheetAnimation(WALK_SHEET, { loop: true, delay: 0.12 });
+    }
+    animation.update(deltaTime);
   }
 
-  animation.update(deltaTime);
+  if (status === 'idle') {
+    animation = STAND_ANIMATION;
+  }
 
   return {
     ...state,

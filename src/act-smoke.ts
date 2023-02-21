@@ -1,4 +1,9 @@
-import { defaultDudeState, drawDude, DudeState, updateDude } from './dude';
+import {
+  createDefaultDudeState,
+  drawDude,
+  DudeState,
+  updateDude,
+} from './dude';
 import { inputController, resources } from './deps';
 import {
   Animation,
@@ -34,23 +39,25 @@ export type SmokerState = {
   x: number;
 };
 
-const defaultSmokerState: SmokerState = {
+const createDefaultSmokerState = (): SmokerState => ({
   status: 'walk-to-sit',
   animation: new SheetAnimation(SMOKER_WALK_SHEET, { loop: true, delay: 0.16 }),
   x: 32,
-};
+});
 
 type CigState = {
-  status: 'none' | 'ground' | 'dude' | 'trash';
+  status: 'none' | 'ground' | 'dude' | 'trash' | 'fall';
   animation: Animation<Sheet>;
+  fallAnimation: Animation<number>;
   x: number;
 };
 
-const defaultCigState: CigState = {
+const createDefaultCigState = (): CigState => ({
   status: 'none',
   animation: new SheetAnimation(CIG_SHEET, { loop: true, delay: 0.3 }),
+  fallAnimation: new SheetAnimation<number>([1, 2, 3], { delay: 0.2 }),
   x: 75,
-};
+});
 
 type DudeTransformState = {
   status: 'none' | 'active' | 'done';
@@ -58,11 +65,11 @@ type DudeTransformState = {
   x: number;
 };
 
-const defaultDudeTransformState: DudeTransformState = {
+const createDefaultDudeTransformState = (): DudeTransformState => ({
   status: 'none',
   animation: new SheetAnimation(DUDE_TRANSFORM_SHEET, { delay: 0.4 }),
   x: 0,
-};
+});
 
 type TrashState = {
   status: 'full' | 'spot';
@@ -78,15 +85,17 @@ export type ActSmokeState = {
   cig: CigState;
 };
 
-export const defaultActSmokeState: ActSmokeState = {
-  status: 'active',
-  endTimer: new Timer(5),
-  trash: { status: 'full' },
-  dude: { ...defaultDudeState, x: 22 },
-  dudeTransform: defaultDudeTransformState,
-  smoker: defaultSmokerState,
-  cig: defaultCigState,
-};
+export function createDefaultActSmokeState(): ActSmokeState {
+  return {
+    status: 'active',
+    endTimer: new Timer(5),
+    trash: { status: 'full' },
+    dude: { ...createDefaultDudeState(), x: 22 },
+    dudeTransform: createDefaultDudeTransformState(),
+    smoker: createDefaultSmokerState(),
+    cig: createDefaultCigState(),
+  };
+}
 
 function drawTrashbin(ctx, { state }: { state: TrashState }) {
   if (state.status === 'spot') {
@@ -137,102 +146,6 @@ function drawSmoker(ctx, { state }: { state: ActSmokeState }) {
     frameWidth,
     frameHeight,
   );
-}
-
-function drawCig(ctx, { state, dude }: { state: CigState; dude: DudeState }) {
-  const { x, animation, status } = state;
-  if (status === 'none' || status === 'trash') {
-    return;
-  }
-
-  let rx = Math.round(x);
-  let y = 33;
-
-  if (status === 'dude') {
-    y = 22;
-    const dudeRx = Math.round(dude.x);
-    rx = dude.direction === 1 ? dudeRx + 5 : dudeRx - 5;
-  }
-
-  const image = resources.images.cig;
-
-  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
-
-  if (dude.direction === -1) {
-    ctx.translate(rx + frameWidth / 2, 0);
-    ctx.scale(-1, 1);
-  }
-
-  const destX = dude.direction === -1 ? 0 : rx - frameWidth / 2;
-
-  ctx.drawImage(
-    image,
-    frameX,
-    frameY,
-    frameWidth,
-    frameHeight,
-    destX,
-    y,
-    frameWidth,
-    frameHeight,
-  );
-
-  if (dude.direction === -1) {
-    ctx.scale(-1, 1);
-    ctx.translate(-(rx + frameWidth / 2), 0);
-  }
-}
-
-function drawDudeTransform(
-  ctx,
-  { state, dude }: { state: DudeTransformState; dude: DudeState },
-) {
-  const { x, status, animation } = state;
-  if (status === 'none') {
-    return;
-  }
-
-  const rx = Math.round(x);
-
-  const image = resources.images.dudeTransformTrash;
-
-  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
-
-  if (dude.direction === -1) {
-    ctx.translate(rx + frameWidth / 2, 0);
-    ctx.scale(-1, 1);
-  }
-
-  const destX = dude.direction === -1 ? 0 : rx - frameWidth / 2;
-
-  ctx.drawImage(
-    image,
-    frameX,
-    frameY,
-    frameWidth,
-    frameHeight,
-    destX,
-    11,
-    frameWidth,
-    frameHeight,
-  );
-
-  if (dude.direction === -1) {
-    ctx.scale(-1, 1);
-    ctx.translate(-(rx + frameWidth / 2), 0);
-  }
-}
-
-export function drawActSmoke(
-  ctx,
-  { state, lastTime }: { state: ActSmokeState; lastTime: number },
-) {
-  drawBench(ctx);
-  drawTrashbin(ctx, { state: state.trash });
-  drawSmoker(ctx, { state });
-  drawCig(ctx, { state: state.cig, dude: state.dude });
-  drawDude(ctx, { state: state.dude, lastTime });
-  drawDudeTransform(ctx, { state: state.dudeTransform, dude: state.dude });
 }
 
 function updateSmoker({
@@ -358,6 +271,54 @@ function updateSmoker({
   return state;
 }
 
+function drawCig(ctx, { state, dude }: { state: CigState; dude: DudeState }) {
+  const { x, animation, status, fallAnimation } = state;
+  if (status === 'none' || status === 'trash') {
+    return;
+  }
+
+  let rx = Math.round(x);
+  let y = 33;
+
+  if (status === 'dude') {
+    y = 19;
+    const dudeRx = Math.round(dude.x);
+    rx = dude.direction === 1 ? dudeRx + 8 : dudeRx - 8;
+  } else if (status === 'fall') {
+    y = 21 + 4 * fallAnimation.frame();
+    const dudeRx = Math.round(dude.x);
+    rx = dude.direction === 1 ? dudeRx + 8 : dudeRx - 8;
+  }
+
+  const image = resources.images.cig;
+
+  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
+
+  if (dude.direction === -1) {
+    ctx.translate(rx + frameWidth / 2, 0);
+    ctx.scale(-1, 1);
+  }
+
+  const destX = dude.direction === -1 ? 0 : rx - frameWidth / 2;
+
+  ctx.drawImage(
+    image,
+    frameX,
+    frameY,
+    frameWidth,
+    frameHeight,
+    destX,
+    y,
+    frameWidth,
+    frameHeight,
+  );
+
+  if (dude.direction === -1) {
+    ctx.scale(-1, 1);
+    ctx.translate(-(rx + frameWidth / 2), 0);
+  }
+}
+
 function updateCig({
   state,
   deltaTime,
@@ -365,14 +326,59 @@ function updateCig({
   state: CigState;
   deltaTime: number;
 }) {
-  const { animation } = state;
+  const { animation, status, fallAnimation } = state;
 
   animation.update(deltaTime);
+
+  if (status === 'fall') {
+    fallAnimation.update(deltaTime);
+  }
 
   return {
     ...state,
     animation,
+    status,
   };
+}
+
+function drawDudeTransform(
+  ctx,
+  { state, dude }: { state: DudeTransformState; dude: DudeState },
+) {
+  const { x, status, animation } = state;
+  if (status === 'none') {
+    return;
+  }
+
+  const rx = Math.round(x);
+
+  const image = resources.images.dudeTransformTrash;
+
+  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
+
+  if (dude.direction === -1) {
+    ctx.translate(rx + frameWidth / 2, 0);
+    ctx.scale(-1, 1);
+  }
+
+  const destX = dude.direction === -1 ? 0 : rx - frameWidth / 2;
+
+  ctx.drawImage(
+    image,
+    frameX,
+    frameY,
+    frameWidth,
+    frameHeight,
+    destX,
+    11,
+    frameWidth,
+    frameHeight,
+  );
+
+  if (dude.direction === -1) {
+    ctx.scale(-1, 1);
+    ctx.translate(-(rx + frameWidth / 2), 0);
+  }
 }
 
 function updateDudeTransform({
@@ -397,6 +403,18 @@ function updateDudeTransform({
     animation,
     status,
   };
+}
+
+export function drawActSmoke(
+  ctx,
+  { state, lastTime }: { state: ActSmokeState; lastTime: number },
+) {
+  drawBench(ctx);
+  drawTrashbin(ctx, { state: state.trash });
+  drawSmoker(ctx, { state });
+  drawCig(ctx, { state: state.cig, dude: state.dude });
+  drawDude(ctx, { state: state.dude, lastTime });
+  drawDudeTransform(ctx, { state: state.dudeTransform, dude: state.dude });
 }
 
 export function updateActSmoke({
@@ -435,7 +453,7 @@ export function updateActSmoke({
   }
 
   if (cig.status === 'ground') {
-    const isPickingRange = dude.x >= 69 && dude.x < 76;
+    const isPickingRange = dude.x >= 67 && dude.x < 76;
 
     if (isDown && isPickingRange) {
       dude.status = 'crouch';
@@ -444,16 +462,19 @@ export function updateActSmoke({
     if (dude.status === 'crouch' && isUp) {
       cig.status = 'dude';
       dude.status = 'walking';
+      dude.hand = 'holding';
     }
   }
 
   if (cig.status === 'dude') {
-    const isTrashingRange = dude.x >= 10 && dude.x < 22;
+    const isTrashingRange = dude.x >= 10 && dude.x < 25;
 
     if (isDown && isTrashingRange) {
       if (trash.status === 'full') {
         cig.status = 'none';
+
         trash.status = 'spot';
+        dude.hand = 'static';
 
         smoker.status = 'transform';
         smoker.animation = new SheetAnimation(SMOKER_TRANSFORM_SHEET, {
@@ -461,7 +482,7 @@ export function updateActSmoke({
         });
         smoker.x = 13;
       } else if (trash.status === 'spot') {
-        cig.status = 'none';
+        cig.status = 'fall';
         dude.status = 'none';
         dudeTransform.status = 'active';
         dudeTransform.x = dude.x;

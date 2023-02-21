@@ -5,13 +5,13 @@ import { inputController, resources } from './deps';
 import { drawDebugGrid } from './debug';
 import {
   ActSmokeState,
-  defaultActSmokeState,
+  createDefaultActSmokeState,
   drawActSmoke,
   updateActSmoke,
 } from './act-smoke';
 import {
   ActIntroState,
-  defaultActIntroState,
+  createDefaultActIntroState,
   drawActIntro,
   updateActIntro,
 } from './act-intro';
@@ -44,6 +44,12 @@ const state: State = {
   menu: createDefaultMenuState({ status: 'intro' }),
   act: defaultActNull,
   actIndex: -1,
+
+  // act: createDefaultActIntroState(),
+  // actIndex: 0,
+
+  // act: createDefaultActSmokeState(),
+  // actIndex: 1,
 };
 
 function draw({ lastTime }) {
@@ -77,14 +83,17 @@ function tick({ deltaTime, lastTime }) {
 
   let { act, menu, actIndex } = state;
 
+  // act = updateActIntro({ state: act as ActIntroState, deltaTime });
+  // act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
+
   menu = updateMenu({ state: menu, deltaTime });
 
   const { selectedIndex } = state.menu.act;
   if (selectedIndex != null && actIndex !== selectedIndex) {
     actIndex = selectedIndex;
 
-    if (actIndex === 0) act = defaultActIntroState;
-    if (actIndex === 1) act = defaultActSmokeState;
+    if (actIndex === 0) act = createDefaultActIntroState();
+    if (actIndex === 1) act = createDefaultActSmokeState();
   }
 
   if (state.menu.status === 'level' || state.menu.status === 'next') {
@@ -97,9 +106,14 @@ function tick({ deltaTime, lastTime }) {
   }
 
   if (act.status === 'ended' && menu.status === 'level') {
+    console.log('new state??');
     menu = createDefaultMenuState({
       status: 'next',
     });
+  }
+  if (menu.status === 'bus') {
+    actIndex = -1;
+    act = defaultActNull;
   }
 
   state.menu = menu;

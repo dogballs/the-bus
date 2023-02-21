@@ -4,6 +4,7 @@ const IMAGES = {
   dudeSitting: 'dude-sitting.png',
   dudeCrouch: 'dude-crouch.png',
   dudeHeadBob: 'dude-head-bob.png',
+  dudeHand: 'dude-hand.png',
   // menu
   bus: 'bus.png',
   // common - env
@@ -18,6 +19,7 @@ const IMAGES = {
   punkWalk: 'punk-walk-Sheet.png',
   punkListen: 'punk-listen-Sheet.png',
   punkNotes: 'punk-notes.png',
+  dudeSucked: 'dude-sucked-Sheet.png',
   // act - smoker
   dudeTransformTrash: 'dude-transform-trash-Sheet.png',
   trashbin: 'trashbin.png',
@@ -26,6 +28,7 @@ const IMAGES = {
   smokerSitting: 'smoker-sitting-Sheet.png',
   smokerTransform: 'smoker-transform-Sheet.png',
   cig: 'smoke-Sheet.png',
+  cigFall: 'cig-fall-Sheet.png',
   // act - agent
   agentWalk: 'agent-walk-Sheet.png',
 };
