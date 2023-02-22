@@ -409,7 +409,7 @@ export function updateActIntro({
     if (punk.status === 'handing') {
       if (dude.x < 32) {
         dude.x = 32;
-        dude.hand = 'holding';
+        dude.hand = 'holding-down';
         dude.status = 'idle';
         dude.walking = 'blocked';
         dudeSucked.status = 'timer';

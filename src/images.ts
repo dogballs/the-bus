@@ -31,6 +31,11 @@ const IMAGES = {
   cigFall: 'cig-fall-Sheet.png',
   // act - agent
   agentWalk: 'agent-walk-Sheet.png',
+  // act - rain
+  umbrella: 'umbrella.png',
+  ghostWalk: 'ghost-walk-Sheet.png',
+  ghostAppear: 'ghost-appear-Sheet.png',
+  dudeDisappear: 'dude-disappear-Sheet.png',
 };
 
 export type ImageMap = {

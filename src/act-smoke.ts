@@ -462,7 +462,7 @@ export function updateActSmoke({
     if (dude.status === 'crouch' && isUp) {
       cig.status = 'dude';
       dude.status = 'walking';
-      dude.hand = 'holding';
+      dude.hand = 'holding-down';
     }
   }
 

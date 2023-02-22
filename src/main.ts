@@ -22,6 +22,18 @@ import {
   updateMenu,
 } from './menu';
 import { ActNullState, defaultActNull } from './act-null';
+import {
+  ActGooseState,
+  createDefaultActGooseState,
+  drawActGoose,
+  updateActGoose,
+} from './act-goose';
+import {
+  ActRainState,
+  createDefaultActRainState,
+  drawActRain,
+  updateActRain,
+} from './act-rain';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -36,12 +48,13 @@ const loop = new GameLoop({ onTick: tick });
 
 type State = {
   menu: MenuState;
-  act: ActNullState | ActIntroState | ActSmokeState;
+  act: ActNullState | ActIntroState | ActSmokeState | ActGooseState;
   actIndex: number;
 };
 
 const state: State = {
   menu: createDefaultMenuState({ status: 'intro' }),
+
   act: defaultActNull,
   actIndex: -1,
 
@@ -50,6 +63,12 @@ const state: State = {
 
   // act: createDefaultActSmokeState(),
   // actIndex: 1,
+
+  // act: createDefaultActRainState(),
+  // actIndex: 2,
+
+  // act: createDefaultActGooseState(),
+  // actIndex: 3,
 };
 
 function draw({ lastTime }) {
@@ -64,6 +83,12 @@ function draw({ lastTime }) {
   if (actIndex === 1) {
     drawActSmoke(ctx, { state: state.act as ActSmokeState, lastTime });
   }
+  if (actIndex === 2) {
+    drawActRain(ctx, { state: state.act as ActRainState, lastTime });
+  }
+  // if (actIndex === 3) {
+  //   drawActGoose(ctx, { state: state.act as ActGooseState, lastTime });
+  // }
 
   drawMenu(ctx, { state: state.menu, lastTime });
 
@@ -85,6 +110,8 @@ function tick({ deltaTime, lastTime }) {
 
   // act = updateActIntro({ state: act as ActIntroState, deltaTime });
   // act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
+  // act = updateActRain({ state: act as ActRainState, deltaTime });
+  // act = updateActGoose({ state: act as ActGooseState, deltaTime });
 
   menu = updateMenu({ state: menu, deltaTime });
 
@@ -94,6 +121,7 @@ function tick({ deltaTime, lastTime }) {
 
     if (actIndex === 0) act = createDefaultActIntroState();
     if (actIndex === 1) act = createDefaultActSmokeState();
+    if (actIndex === 2) act = createDefaultActRainState();
   }
 
   if (state.menu.status === 'level' || state.menu.status === 'next') {
@@ -103,10 +131,12 @@ function tick({ deltaTime, lastTime }) {
     if (actIndex === 1) {
       act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
     }
+    if (actIndex === 2) {
+      act = updateActRain({ state: act as ActRainState, deltaTime });
+    }
   }
 
   if (act.status === 'ended' && menu.status === 'level') {
-    console.log('new state??');
     menu = createDefaultMenuState({
       status: 'next',
     });

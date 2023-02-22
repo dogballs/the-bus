@@ -16,7 +16,7 @@ type DudeStatus = 'none' | 'idle' | 'walking' | 'sitting' | 'crouch';
 export type DudeState = {
   status: DudeStatus;
   head: 'static' | 'bobbing';
-  hand: 'static' | 'holding';
+  hand: 'static' | 'holding-down' | 'holding-straight';
   walking: 'active' | 'blocked';
   animation: Animation<Sheet>;
   x: number;
@@ -116,9 +116,12 @@ export function drawDude(
   if (hand === 'static') {
     ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
     ctx.drawImage(handImage, 0, 0, 1, 8, destX + 10, destY + dstHandYOff, 1, 8);
-  } else if (hand === 'holding') {
+  } else if (hand === 'holding-down') {
     ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
     ctx.drawImage(handImage, 2, 0, 6, 8, destX + 10, destY + dstHandYOff, 6, 8);
+  } else if (hand === 'holding-straight') {
+    ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
+    ctx.drawImage(handImage, 9, 0, 6, 8, destX + 10, destY + dstHandYOff, 6, 8);
   }
 
   if (direction === -1) {
