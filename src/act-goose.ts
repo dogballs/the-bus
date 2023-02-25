@@ -111,8 +111,8 @@ type BreadState = {
   x: number;
 };
 const createDefaultBreadState = (): BreadState => ({
-  status: 'falling',
-  y: -170,
+  status: 'idle',
+  y: 22,
   x: 69,
 });
 
@@ -492,8 +492,12 @@ function drawBread(
   const rx = Math.round(x);
   const ry = Math.round(y);
 
+  if (status === 'idle') {
+    ctx.drawImage(image, 0, 4, 15, 3, rx - 10, ry + 10, 15, 3);
+  }
   if (status === 'falling') {
-    ctx.drawImage(image, 0, 3, 3, 13, rx, ry, 3, 13);
+    ctx.drawImage(image, 0, 4, 15, 3, rx - 10, ry + 10, 15, 3);
+    // ctx.drawImage(image, 0, 8, 8, 12, rx, ry + 12, 8, 12);
   }
   if (status === 'laying') {
     ctx.drawImage(image, 0, 0, 15, 3, rx - 10, ry + 10, 15, 3);
@@ -501,7 +505,7 @@ function drawBread(
   if (status === 'dude') {
     const dudeRx = Math.round(dude.x);
     const rx = dude.direction === 1 ? dudeRx + 10 : dudeRx - 10;
-    const frameWidth = 7;
+    const frameWidth = 10;
 
     if (dude.direction === -1) {
       ctx.translate(Math.round(rx + frameWidth / 2), 0);
@@ -712,6 +716,10 @@ export function updateActGoose({
 
   const isUp = inputController.isDown(InputControl.Up);
   const isDown = inputController.isDown(InputControl.Down);
+
+  if (mom.x <= 44 && bread.status === 'idle') {
+    bread.status = 'falling';
+  }
 
   const isBreadRange =
     dude.direction === 1
