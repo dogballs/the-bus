@@ -48,12 +48,19 @@ const loop = new GameLoop({ onTick: tick });
 
 type State = {
   menu: MenuState;
-  act: ActNullState | ActIntroState | ActSmokeState | ActGooseState;
+  act:
+    | ActNullState
+    | ActIntroState
+    | ActSmokeState
+    | ActRainState
+    | ActGooseState;
   actIndex: number;
+  shakeFrame: number;
 };
 
 const state: State = {
   menu: createDefaultMenuState({ status: 'intro' }),
+  shakeFrame: 0,
 
   act: defaultActNull,
   actIndex: -1,
@@ -71,10 +78,33 @@ const state: State = {
   // actIndex: 3,
 };
 
-function draw({ lastTime }) {
+function draw({
+  lastTime,
+  shake = false,
+}: {
+  lastTime: number;
+  shake?: boolean;
+}) {
   ctx.clearRect(0, 0, IW, IH);
 
   drawBackground();
+
+  if (shake) {
+    const nextFrame = Math.round(lastTime / 0.2) % 2 === 0 ? 1 : 0;
+    if (state.shakeFrame !== nextFrame) {
+      if (nextFrame === 0) {
+        ctx.translate(0, 2);
+      } else if (nextFrame === 1) {
+        ctx.translate(0, -2);
+      }
+      state.shakeFrame = nextFrame;
+    }
+  } else {
+    if (state.shakeFrame === 1) {
+      state.shakeFrame = 0;
+      ctx.translate(0, 2);
+    }
+  }
 
   const { actIndex } = state;
   if (actIndex === 0) {
@@ -86,9 +116,9 @@ function draw({ lastTime }) {
   if (actIndex === 2) {
     drawActRain(ctx, { state: state.act as ActRainState, lastTime });
   }
-  // if (actIndex === 3) {
-  //   drawActGoose(ctx, { state: state.act as ActGooseState, lastTime });
-  // }
+  if (actIndex === 3) {
+    drawActGoose(ctx, { state: state.act as ActGooseState, lastTime });
+  }
 
   drawMenu(ctx, { state: state.menu, lastTime });
 
@@ -122,6 +152,7 @@ function tick({ deltaTime, lastTime }) {
     if (actIndex === 0) act = createDefaultActIntroState();
     if (actIndex === 1) act = createDefaultActSmokeState();
     if (actIndex === 2) act = createDefaultActRainState();
+    if (actIndex === 3) act = createDefaultActGooseState();
   }
 
   if (state.menu.status === 'level' || state.menu.status === 'next') {
@@ -133,6 +164,9 @@ function tick({ deltaTime, lastTime }) {
     }
     if (actIndex === 2) {
       act = updateActRain({ state: act as ActRainState, deltaTime });
+    }
+    if (actIndex === 3) {
+      act = updateActGoose({ state: act as ActGooseState, deltaTime });
     }
   }
 
@@ -154,7 +188,7 @@ function tick({ deltaTime, lastTime }) {
   const drawDeltaTime = lastTime - lastDrawTime;
   if (drawDeltaTime > drawInterval) {
     lastDrawTime = lastTime;
-    draw({ lastTime });
+    draw({ lastTime, shake: act.shake });
   }
 }
 

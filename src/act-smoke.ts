@@ -77,6 +77,7 @@ type TrashState = {
 
 export type ActSmokeState = {
   status: 'active' | 'ended';
+  shake: false;
   endTimer: Timer;
   trash: TrashState;
   smoker: SmokerState;
@@ -88,6 +89,7 @@ export type ActSmokeState = {
 export function createDefaultActSmokeState(): ActSmokeState {
   return {
     status: 'active',
+    shake: false,
     endTimer: new Timer(5),
     trash: { status: 'full' },
     dude: { ...createDefaultDudeState(), x: 22 },

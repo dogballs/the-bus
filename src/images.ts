@@ -36,6 +36,12 @@ const IMAGES = {
   ghostWalk: 'ghost-walk-Sheet.png',
   ghostAppear: 'ghost-appear-Sheet.png',
   dudeDisappear: 'dude-disappear-Sheet.png',
+  // act - goose
+  gooseWalk: 'goose-walk-Sheet.png',
+  gooseScream: 'goose-scream-Sheet.png',
+  goslingWalk: 'gosling-walk-Sheet.png',
+  gosilla: 'gosilla-Sheet.png',
+  bread: 'bread.png',
 };
 
 export type ImageMap = {

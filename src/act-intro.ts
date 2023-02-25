@@ -72,6 +72,7 @@ const createDefaultDudeSuckedState = (): DudeSuckedState => ({
 
 export type ActIntroState = {
   status: 'active' | 'ended';
+  shake: false;
   endTimer: Timer;
   bobbingTimer: Timer;
   dude: DudeState;
@@ -84,6 +85,7 @@ export type ActIntroState = {
 export function createDefaultActIntroState(): ActIntroState {
   return {
     status: 'active',
+    shake: false,
     endTimer: new Timer(3),
     bobbingTimer: new Timer(2),
     dude: { ...createDefaultDudeState(), x: 18 },

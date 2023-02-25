@@ -85,6 +85,7 @@ export const createDudeDisappearState = (): DudeDisappearState => ({
 
 export type ActRainState = {
   status: 'active' | 'ended';
+  shake: false;
   endTimer: Timer;
   dude: DudeState;
   umbrella: UmbrellaState;
@@ -97,6 +98,7 @@ const END_TIME = 4;
 export function createDefaultActRainState(): ActRainState {
   return {
     status: 'active',
+    shake: false,
     endTimer: new Timer(END_TIME),
     dude: {
       ...createDefaultDudeState(),
