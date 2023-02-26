@@ -90,7 +90,7 @@ export function createDefaultActSmokeState(): ActSmokeState {
   return {
     status: 'active',
     shake: false,
-    endTimer: new Timer(5),
+    endTimer: new Timer(4),
     trash: { status: 'full' },
     dude: { ...createDefaultDudeState(), x: 22 },
     dudeTransform: createDefaultDudeTransformState(),

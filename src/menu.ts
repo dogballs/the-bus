@@ -31,6 +31,7 @@ const defaultActState: ActState = {
     { id: 2, isOpen: false },
     { id: 3, isOpen: false },
     { id: 4, isOpen: false },
+    { id: 5, isOpen: false },
   ],
 };
 

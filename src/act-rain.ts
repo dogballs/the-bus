@@ -43,7 +43,7 @@ type UmbrellaState = {
 
 export const createDefaultUmbrellaState = (): UmbrellaState => ({
   status: 'idle',
-  x: 3,
+  x: 4,
   walkedInOpened: false,
 });
 
@@ -449,7 +449,7 @@ export function updateActRain({
     dude.status = 'idle';
   }
 
-  if (umbrella.status === 'idle' && dude.x <= 12) {
+  if (umbrella.status === 'idle' && dude.x <= 13) {
     umbrella.status = 'closed';
     dude.hand = 'holding-straight';
   }

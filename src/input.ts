@@ -11,6 +11,12 @@ enum KeyboardButtonCode {
   A = 65,
   D = 68,
   S = 83,
+  Num0 = 96,
+  Num2 = 98,
+  Num4 = 100,
+  Num5 = 101,
+  Num6 = 102,
+  Num8 = 104,
 }
 
 // Values are button indexes based on https://w3c.github.io/gamepad/#remapping
@@ -58,22 +64,28 @@ const KEYBOARD_BINDING: InputBinding = new Map<
 KEYBOARD_BINDING.set(InputControl.Up, [
   KeyboardButtonCode.Up,
   KeyboardButtonCode.W,
+  KeyboardButtonCode.Num8,
 ]);
 KEYBOARD_BINDING.set(InputControl.Down, [
   KeyboardButtonCode.Down,
   KeyboardButtonCode.S,
+  KeyboardButtonCode.Num2,
 ]);
 KEYBOARD_BINDING.set(InputControl.Left, [
   KeyboardButtonCode.Left,
   KeyboardButtonCode.A,
+  KeyboardButtonCode.Num4,
 ]);
 KEYBOARD_BINDING.set(InputControl.Right, [
   KeyboardButtonCode.Right,
   KeyboardButtonCode.D,
+  KeyboardButtonCode.Num6,
 ]);
 KEYBOARD_BINDING.set(InputControl.Select, [
   KeyboardButtonCode.Enter,
   KeyboardButtonCode.Space,
+  KeyboardButtonCode.Num0,
+  KeyboardButtonCode.Num5,
 ]);
 KEYBOARD_BINDING.set(InputControl.Back, [
   KeyboardButtonCode.Esc,
