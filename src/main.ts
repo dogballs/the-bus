@@ -139,7 +139,7 @@ function draw({
 
   drawMenu(ctx, { state: state.menu, lastTime });
 
-  drawDebugGrid(ctx);
+  // drawDebugGrid(ctx);
 }
 
 function drawBackground() {
