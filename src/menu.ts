@@ -60,6 +60,9 @@ export function createDefaultMenuState({
   status: 'intro' | 'bus' | 'level' | 'next';
   highlightedIndex?: number;
 }): MenuState {
+  if (highlightedIndex > defaultActState.acts.length - 1) {
+    highlightedIndex = 0;
+  }
   return {
     status,
     bus: { ...defaultBusState },

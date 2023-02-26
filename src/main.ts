@@ -78,8 +78,6 @@ const state: State = {
   // actIndex: 3,
 };
 
-// TODO: pre-select next level after finishing current one
-// TODO: loading fonts
 // TODO: logo, screenshots
 // TODO: 15 or 60 FPS
 
@@ -178,6 +176,7 @@ function tick({ deltaTime, lastTime }) {
   if (act.status === 'ended' && menu.status === 'level') {
     menu = createDefaultMenuState({
       status: 'next',
+      highlightedIndex: actIndex + 1,
     });
   }
   if (menu.status === 'bus') {
