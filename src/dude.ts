@@ -7,11 +7,21 @@ const WALK_SHEET = createSheet(16, 32, 3);
 const SIT_SHEET = createSheet(16, 32, 1);
 const CROUCH_SHEET = createSheet(16, 32, 1);
 
+const CROUCH_ANIMATION = new SheetAnimation(CROUCH_SHEET);
 const STAND_ANIMATION = new SheetAnimation(createSheet(16, 32, 1));
+const CLIMB_ANIMATION_HIGH = new SheetAnimation(createSheet(16, 32, 2, 2), {
+  loop: true,
+  delay: 0.5,
+});
+const CLIMB_ANIMATION_LOW = new SheetAnimation(createSheet(16, 32, 2), {
+  loop: true,
+  delay: 0.5,
+});
 
 const WALK_SPEED = 16;
+const CLIMB_SPEED = 10;
 
-type DudeStatus = 'none' | 'idle' | 'walking' | 'sitting' | 'crouch';
+type DudeStatus = 'none' | 'idle' | 'walking' | 'sitting' | 'crouch' | 'climb';
 
 export type DudeState = {
   status: DudeStatus;
@@ -20,7 +30,10 @@ export type DudeState = {
   walking: 'active' | 'blocked';
   animation: Animation<Sheet>;
   x: number;
+  y: number;
   direction: number;
+  isUnderworld: boolean;
+  controllable: boolean;
 };
 
 export const createDefaultDudeState = (): DudeState => ({
@@ -30,19 +43,41 @@ export const createDefaultDudeState = (): DudeState => ({
   walking: 'active',
   animation: STAND_ANIMATION,
   x: 10,
+  y: 11,
   direction: 1,
+  isUnderworld: false,
+  controllable: true,
 });
 
 export function drawDude(
   ctx,
   { state, lastTime }: { state: DudeState; lastTime: number },
 ) {
-  const { x, direction, animation, status, head, hand } = state;
+  const { x, y, direction, animation, status, head, hand } = state;
   if (status === 'none') {
     return;
   }
 
   const rx = Math.round(x);
+  const ry = Math.round(y);
+
+  if (status === 'climb') {
+    const image = resources.images.dudeClimb;
+    const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
+
+    ctx.drawImage(
+      image,
+      frameX,
+      frameY,
+      frameWidth,
+      frameHeight,
+      rx - frameWidth / 2,
+      ry,
+      frameWidth,
+      frameHeight,
+    );
+    return;
+  }
 
   const dstHeadHeight = 12;
   let dstHeadYOff = 0;
@@ -137,14 +172,65 @@ export function updateDude({
   state: DudeState;
   deltaTime: number;
 }): DudeState {
-  let { status, x, direction, animation, walking } = state;
+  let {
+    status,
+    x,
+    y,
+    direction,
+    animation,
+    walking,
+    isUnderworld,
+    controllable,
+  } = state;
 
   if (status === 'none' || status === 'sitting' || status === 'crouch') {
     return state;
   }
 
-  const isLeft = inputController.isHold(InputControl.Left);
-  const isRight = inputController.isHold(InputControl.Right);
+  const isLeft = inputController.isHold(InputControl.Left) && controllable;
+  const isRight = inputController.isHold(InputControl.Right) && controllable;
+  const isUp = inputController.isHold(InputControl.Up) && controllable;
+  const isDown = inputController.isHold(InputControl.Down) && controllable;
+
+  if (status === 'climb') {
+    const yChange = CLIMB_SPEED * deltaTime;
+    if (isDown) {
+      animation.update(deltaTime);
+      y += yChange;
+    } else if (isUp) {
+      animation.update(deltaTime);
+      y -= yChange;
+    }
+    if (isUnderworld) {
+      y = Math.min(y, 11);
+    } else {
+      y = Math.max(y, 11);
+    }
+
+    if (isUnderworld) {
+      if (y >= 11) {
+        y = 11;
+        status = 'idle';
+      }
+    } else {
+      if (y <= 11) {
+        y = 11;
+        status = 'idle';
+      }
+    }
+
+    if (isUnderworld) {
+      animation = CLIMB_ANIMATION_LOW;
+    } else {
+      if (y < 24) {
+        animation = CLIMB_ANIMATION_HIGH;
+      } else {
+        animation = CLIMB_ANIMATION_LOW;
+      }
+    }
+
+    return { ...state, status, y, animation };
+  }
 
   const xChange = WALK_SPEED * deltaTime;
 

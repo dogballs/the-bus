@@ -34,6 +34,12 @@ import {
   drawActRain,
   updateActRain,
 } from './act-rain';
+import {
+  ActOutroState,
+  createDefaultActOutroState,
+  drawActOutro,
+  updateActOutro,
+} from './act-outro';
 
 const loadingElement = document.querySelector<HTMLElement>('[data-loading]');
 const crashElement = document.querySelector<HTMLElement>('[data-crash]');
@@ -53,7 +59,8 @@ type State = {
     | ActIntroState
     | ActSmokeState
     | ActRainState
-    | ActGooseState;
+    | ActGooseState
+    | ActOutroState;
   actIndex: number;
   shakeFrame: number;
 };
@@ -64,22 +71,26 @@ const state: State = {
 
   act: defaultActNull,
   actIndex: -1,
-
+  //
   // act: createDefaultActIntroState(),
   // actIndex: 0,
-
+  //
   // act: createDefaultActSmokeState(),
   // actIndex: 1,
-
+  //
   // act: createDefaultActRainState(),
   // actIndex: 2,
-
+  //
   // act: createDefaultActGooseState(),
   // actIndex: 3,
+  //
+  // act: createDefaultActOutroState(),
+  // actIndex: 4,
 };
 
 // TODO: logo, screenshots
 // TODO: 15 or 60 FPS
+// TODO: "select act" text in menu?
 
 function draw({
   lastTime,
@@ -122,10 +133,13 @@ function draw({
   if (actIndex === 3) {
     drawActGoose(ctx, { state: state.act as ActGooseState, lastTime });
   }
+  if (actIndex === 4) {
+    drawActOutro(ctx, { state: state.act as ActOutroState, lastTime });
+  }
 
   drawMenu(ctx, { state: state.menu, lastTime });
 
-  // drawDebugGrid(ctx);
+  drawDebugGrid(ctx);
 }
 
 function drawBackground() {
@@ -145,6 +159,7 @@ function tick({ deltaTime, lastTime }) {
   // act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
   // act = updateActRain({ state: act as ActRainState, deltaTime });
   // act = updateActGoose({ state: act as ActGooseState, deltaTime });
+  // act = updateActOutro({ state: act as ActOutroState, deltaTime });
 
   menu = updateMenu({ state: menu, deltaTime });
 
@@ -156,6 +171,7 @@ function tick({ deltaTime, lastTime }) {
     if (actIndex === 1) act = createDefaultActSmokeState();
     if (actIndex === 2) act = createDefaultActRainState();
     if (actIndex === 3) act = createDefaultActGooseState();
+    if (actIndex === 4) act = createDefaultActOutroState();
   }
 
   if (state.menu.status === 'level' || state.menu.status === 'next') {
@@ -170,6 +186,9 @@ function tick({ deltaTime, lastTime }) {
     }
     if (actIndex === 3) {
       act = updateActGoose({ state: act as ActGooseState, deltaTime });
+    }
+    if (actIndex === 4) {
+      act = updateActOutro({ state: act as ActOutroState, deltaTime });
     }
   }
 

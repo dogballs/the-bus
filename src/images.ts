@@ -5,6 +5,7 @@ const IMAGES = {
   dudeCrouch: 'dude-crouch.png',
   dudeHeadBob: 'dude-head-bob.png',
   dudeHand: 'dude-hand.png',
+  dudeClimb: 'dude-climb-Sheet.png',
   // menu
   bus: 'bus.png',
   // common - env
@@ -42,6 +43,12 @@ const IMAGES = {
   goslingWalk: 'gosling-walk-Sheet.png',
   gosilla: 'gosilla-Sheet.png',
   bread: 'bread.png',
+  // act - outro
+  manhole: 'manhole.png',
+  manholeAppear: 'manhole-appear-Sheet.png',
+  tree: 'tree.png',
+  midgetWalk: 'midget-Sheet.png',
+  midgetClimb: 'midget-climb-Sheet.png',
 };
 
 export type ImageMap = {

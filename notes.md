@@ -27,27 +27,20 @@ the bus
 - police running after someone
   - trip them with an item
 
-- a lot of people
 - eraserhead baby
-- no people
-- rush hour
-- fire hydrant
-  - dog pissing
-- cat/dog/rat/bird
 - newspaper
 - clock
 - sign
-- trash bin
-  - somebody missed
 - bus anomalies
   - other side
   - ads
   - number
   - people
   - no windows
-- cigarettes/bottles
 - mobile phone
-- music
-  - boombox radio vinyl
 - window/door
 - manhole
+- 12 oz mouse
+  - clock time warp
+  - hired
+  - shark
