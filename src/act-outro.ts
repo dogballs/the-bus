@@ -20,10 +20,6 @@ const MIDGET_WALK_ANIMATION = new SheetAnimation(createSheet(16, 32, 3), {
   loop: true,
   delay: 0.12,
 });
-const MIDGET_CLIMB_ANIMATION = new SheetAnimation(createSheet(16, 32, 2), {
-  loop: true,
-  delay: 0.4,
-});
 const MIDGET_CLIMB_SPEED = 6;
 const MIDGET_WALK_SPEED = 10;
 
@@ -58,7 +54,10 @@ const createDefaultMidgetState = (): MidgetState => ({
   status: 'none',
   x: 5,
   y: 40,
-  animation: MIDGET_CLIMB_ANIMATION,
+  animation: new SheetAnimation(createSheet(16, 32, 2), {
+    loop: true,
+    delay: 0.4,
+  }),
 });
 
 type ManholeState = {
