@@ -23,12 +23,6 @@ const MIDGET_WALK_ANIMATION = new SheetAnimation(createSheet(16, 32, 3), {
 const MIDGET_CLIMB_SPEED = 6;
 const MIDGET_WALK_SPEED = 10;
 
-const MANHOLE_APPEAR_ANIMATION = new SheetAnimation(
-  createSheet(16, 8, 6).reverse(),
-  {
-    delay: 0.3,
-  },
-);
 const MANHOLE_DISAPPEAR_ANIMATION = new SheetAnimation(createSheet(16, 8, 6), {
   delay: 0.3,
 });
@@ -67,7 +61,9 @@ type ManholeState = {
 };
 const createDefaultManholeState = (): ManholeState => ({
   status: 'idle',
-  animation: MANHOLE_APPEAR_ANIMATION,
+  animation: new SheetAnimation(createSheet(16, 8, 6).reverse(), {
+    delay: 0.3,
+  }),
   appearTimer: new Timer(0),
 });
 
