@@ -201,7 +201,6 @@ async function main() {
   try {
     loadingElement.textContent = 'Loading images...';
     resources.images = await loadImages();
-
     document.body.appendChild(canvas);
 
     ctx.scale(RS, RS);

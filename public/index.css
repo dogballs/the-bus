@@ -17,6 +17,7 @@ body {
   flex: 1;
   justify-content: center;
   margin: 0;
+  font-family: Lucida Console, Courier, monospace;
 }
 
 .loading {
