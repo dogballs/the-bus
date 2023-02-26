@@ -380,7 +380,7 @@ export function updateActOutro({
       clone.controllable = true;
     }
 
-    if (clone.status === 'sitting' && isUp) {
+    if (dude.status === 'sitting' && clone.status === 'sitting' && isUp) {
       clone.status = 'idle';
     }
   }
