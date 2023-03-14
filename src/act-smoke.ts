@@ -5,13 +5,8 @@ import {
   updateDude,
 } from './dude';
 import { inputController, resources } from './deps';
-import {
-  Animation,
-  createSheet,
-  Sheet,
-  SheetAnimation,
-  Timer,
-} from './animation';
+import { Sheet, createSheet } from './sprite';
+import { Animation, SheetAnimation, Timer } from './animation';
 import { InputControl } from './input';
 import { drawBench } from './bench';
 

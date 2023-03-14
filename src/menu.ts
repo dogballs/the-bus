@@ -1,6 +1,7 @@
 import { inputController, resources } from './deps';
 import { InputControl } from './input';
-import { Animation, createSheet, Sheet, SheetAnimation } from './animation';
+import { Animation, SheetAnimation } from './animation';
+import { Sheet, createSheet } from './sprite';
 import { randomElement, randomNumber } from './random';
 
 const BUS_STOP_X = -30;

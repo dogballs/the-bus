@@ -1,10 +1,5 @@
-import {
-  Animation,
-  createSheet,
-  Sheet,
-  SheetAnimation,
-  Timer,
-} from './animation';
+import { Animation, SheetAnimation, Timer } from './animation';
+import { Sheet, createSheet } from './sprite';
 import {
   createDefaultDudeState,
   drawDude,

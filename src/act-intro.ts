@@ -2,19 +2,16 @@ import { drawBench } from './bench';
 import {
   createDefaultDudeState,
   drawDude,
+  Dude,
   DudeState,
   updateDude,
 } from './dude';
 import { inputController, resources } from './deps';
 import { InputControl } from './input';
-import {
-  createSheet,
-  Sheet,
-  Animation,
-  SheetAnimation,
-  Timer,
-} from './animation';
+import { Animation, SheetAnimation, Timer } from './animation';
+import { Sheet, createSheet, drawDirectionSheet } from './sprite';
 import { OW } from './config';
+import { Context2D } from './types';
 
 const PUNK_WALK_ANIMATION = new SheetAnimation(createSheet(12, 32, 3), {
   loop: true,
@@ -28,9 +25,9 @@ const PUNK_HANDING_ANIMATION = new SheetAnimation(createSheet(24, 32, 2, 2), {
   loop: true,
   delay: 0.2,
 });
-const PUNK_WALK_SPEED = 6;
+const PUNK_WALK_SPEED = 16;
 
-const NOTE_SPEED = 4;
+const NOTE_SPEED = 14;
 
 type ArrowState = { status: 'walk' | 'sit' | 'none' };
 const createDefaultArrowState = (): ArrowState => ({ status: 'walk' });
@@ -38,7 +35,7 @@ const createDefaultArrowState = (): ArrowState => ({ status: 'walk' });
 type PunkState = {
   status: 'off' | 'walk-in' | 'listen' | 'walk-out' | 'handing' | 'listen-end';
   x: number;
-  direction: number;
+  direction: 1 | -1;
   animation: Animation<Sheet>;
 };
 const createDefaultPunkState = (): PunkState => ({
@@ -139,20 +136,10 @@ function drawDudeSucked(ctx, { state }: { state: DudeSuckedState }) {
     return;
   }
 
-  const image = resources.images.dudeSucked;
-  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
-
-  ctx.drawImage(
-    image,
-    frameX,
-    frameY,
-    frameWidth,
-    frameHeight,
-    25,
-    10,
-    frameWidth,
-    frameHeight,
-  );
+  drawDirectionSheet(ctx, resources.images.dudeSucked, animation.frame(), {
+    x: 32,
+    y: 10,
+  });
 }
 
 function updateDudeSucked({
@@ -186,12 +173,9 @@ function updateDudeSucked({
 
 function drawPunk(ctx, { state }: { state: PunkState }) {
   const { x, direction, animation, status } = state;
-  const rx = Math.round(x);
 
-  const [frameX, frameY, frameWidth, frameHeight] = animation.frame();
-
+  let rx = Math.round(x);
   let image;
-  let destX = direction === -1 ? 0 : rx - frameWidth / 2;
 
   if (status === 'walk-in' || status === 'walk-out' || status === 'off') {
     image = resources.images.punkWalk;
@@ -201,30 +185,14 @@ function drawPunk(ctx, { state }: { state: PunkState }) {
     status === 'listen-end'
   ) {
     image = resources.images.punkListen;
-    destX += 6;
+    rx += 6;
   }
 
-  if (direction === -1) {
-    ctx.translate(rx + frameWidth / 2, 0);
-    ctx.scale(-1, 1);
-  }
-
-  ctx.drawImage(
-    image,
-    frameX,
-    frameY,
-    frameWidth,
-    frameHeight,
-    destX,
-    13,
-    frameWidth,
-    frameHeight,
-  );
-
-  if (direction === -1) {
-    ctx.scale(-1, 1);
-    ctx.translate(-(rx + frameWidth / 2), 0);
-  }
+  drawDirectionSheet(ctx, image, animation.frame(), {
+    x: rx,
+    y: 13,
+    direction,
+  });
 }
 
 function updatePunk({

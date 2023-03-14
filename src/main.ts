@@ -15,6 +15,7 @@ import {
   drawActIntro,
   updateActIntro,
 } from './act-intro';
+import { MusicScene } from './scene-music/scene-music';
 import {
   createDefaultMenuState,
   drawMenu,
@@ -69,11 +70,11 @@ const state: State = {
   menu: createDefaultMenuState({ status: 'intro' }),
   shakeFrame: 0,
 
-  act: defaultActNull,
-  actIndex: -1,
-  //
-  // act: createDefaultActIntroState(),
-  // actIndex: 0,
+  // act: defaultActNull,
+  // actIndex: -1,
+
+  act: createDefaultActIntroState(),
+  actIndex: 0,
   //
   // act: createDefaultActSmokeState(),
   // actIndex: 1,
@@ -121,9 +122,12 @@ function draw({
   }
 
   const { actIndex } = state;
-  if (actIndex === 0) {
-    drawActIntro(ctx, { state: state.act as ActIntroState, lastTime });
-  }
+
+  musicScene.draw({ ctx, lastTime, images: resources.images });
+
+  // if (actIndex === 0) {
+  //   drawActIntro(ctx, { state: state.act as ActIntroState, lastTime });
+  // }
   if (actIndex === 1) {
     drawActSmoke(ctx, { state: state.act as ActSmokeState, lastTime });
   }
@@ -139,7 +143,7 @@ function draw({
 
   drawMenu(ctx, { state: state.menu, lastTime });
 
-  // drawDebugGrid(ctx);
+  drawDebugGrid(ctx);
 }
 
 function drawBackground() {
@@ -150,58 +154,68 @@ function drawBackground() {
 let lastDrawTime = 0;
 const drawInterval = 1 / DRAW_FPS;
 
-function tick({ deltaTime, lastTime }) {
+const musicScene = new MusicScene();
+
+function tick({
+  deltaTime,
+  lastTime,
+}: {
+  deltaTime: number;
+  lastTime: number;
+}) {
   inputController.update();
 
   let { act, menu, actIndex } = state;
+
+  musicScene.update({ deltaTime, inputController });
 
   // act = updateActIntro({ state: act as ActIntroState, deltaTime });
   // act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
   // act = updateActRain({ state: act as ActRainState, deltaTime });
   // act = updateActGoose({ state: act as ActGooseState, deltaTime });
   // act = updateActOutro({ state: act as ActOutroState, deltaTime });
-
-  menu = updateMenu({ state: menu, deltaTime });
-
-  const { selectedIndex } = state.menu.act;
-  if (selectedIndex != null && actIndex !== selectedIndex) {
-    actIndex = selectedIndex;
-
-    if (actIndex === 0) act = createDefaultActIntroState();
-    if (actIndex === 1) act = createDefaultActSmokeState();
-    if (actIndex === 2) act = createDefaultActRainState();
-    if (actIndex === 3) act = createDefaultActGooseState();
-    if (actIndex === 4) act = createDefaultActOutroState();
-  }
-
-  if (state.menu.status === 'level' || state.menu.status === 'next') {
-    if (actIndex === 0) {
-      act = updateActIntro({ state: act as ActIntroState, deltaTime });
-    }
-    if (actIndex === 1) {
-      act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
-    }
-    if (actIndex === 2) {
-      act = updateActRain({ state: act as ActRainState, deltaTime });
-    }
-    if (actIndex === 3) {
-      act = updateActGoose({ state: act as ActGooseState, deltaTime });
-    }
-    if (actIndex === 4) {
-      act = updateActOutro({ state: act as ActOutroState, deltaTime });
-    }
-  }
-
-  if (act.status === 'ended' && menu.status === 'level') {
-    menu = createDefaultMenuState({
-      status: 'next',
-      highlightedIndex: actIndex + 1,
-    });
-  }
-  if (menu.status === 'bus') {
-    actIndex = -1;
-    act = defaultActNull;
-  }
+  //
+  // menu = updateMenu({ state: menu, deltaTime });
+  //
+  // const { selectedIndex } = state.menu.act;
+  // if (selectedIndex != null && actIndex !== selectedIndex) {
+  //   actIndex = selectedIndex;
+  //
+  //   if (actIndex === 0) act = createDefaultActIntroState();
+  //   if (actIndex === 1) act = createDefaultActSmokeState();
+  //   if (actIndex === 2) act = createDefaultActRainState();
+  //   if (actIndex === 3) act = createDefaultActGooseState();
+  //   if (actIndex === 4) act = createDefaultActOutroState();
+  // }
+  //
+  // if (state.menu.status === 'level' || state.menu.status === 'next') {
+  //   if (actIndex === 0) {
+  //     act = updateActIntro({ state: act as ActIntroState, deltaTime });
+  //   }
+  //   if (actIndex === 1) {
+  //     act = updateActSmoke({ state: act as ActSmokeState, deltaTime });
+  //   }
+  //   if (actIndex === 2) {
+  //     act = updateActRain({ state: act as ActRainState, deltaTime });
+  //   }
+  //   if (actIndex === 3) {
+  //     act = updateActGoose({ state: act as ActGooseState, deltaTime });
+  //   }
+  //   if (actIndex === 4) {
+  //     act = updateActOutro({ state: act as ActOutroState, deltaTime });
+  //   }
+  // }
+  //
+  // if (act.status === 'ended' && menu.status === 'level') {
+  //   menu = createDefaultMenuState({
+  //     status: 'next',
+  //     highlightedIndex: actIndex + 1,
+  //   });
+  // }
+  // if (menu.status === 'bus') {
+  //   actIndex = -1;
+  //   act = defaultActNull;
+  // }
 
   state.menu = menu;
   state.act = act;

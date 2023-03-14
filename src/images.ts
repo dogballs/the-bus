@@ -1,3 +1,5 @@
+// TODO: use keys for types
+
 const IMAGES = {
   // common - dude
   dudeWalk: 'dude-walk-Sheet.png',

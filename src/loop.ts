@@ -3,7 +3,7 @@ interface GameLoopOptions {
   // or breakpoint is activated during debugging.
   deltaTimeLimit?: number;
   fps?: number;
-  onTick?: ({ deltaTime }: { deltaTime: number; lastTime: number }) => void;
+  onTick?: (args: { deltaTime: number; lastTime: number }) => void;
 }
 
 const DEFAULT_OPTIONS = {

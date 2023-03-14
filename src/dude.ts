@@ -1,7 +1,11 @@
-import { Animation, SheetAnimation, createSheet, Sheet } from './animation';
-import { resources, inputController } from './deps';
+import { Animation, SheetAnimation, Timer } from './animation';
+import { inputController, resources } from './deps';
+import { createSheet, drawDirectionSheet, drawSheet, Sheet } from './sprite';
 import { InputControl } from './input';
+import { Subject } from './subject';
 import { OW } from './config';
+import { DrawArgs, UpdateArgs } from './types';
+import { State, StateMachine } from './state';
 
 const WALK_SHEET = createSheet(16, 32, 3);
 const SIT_SHEET = createSheet(16, 32, 1);
@@ -31,7 +35,7 @@ export type DudeState = {
   animation: Animation<Sheet>;
   x: number;
   y: number;
-  direction: number;
+  direction: 1 | -1;
   isUnderworld: boolean;
   controllable: boolean;
 };
@@ -266,4 +270,428 @@ export function updateDude({
     direction,
     animation,
   };
+}
+
+const DUDE_START_X = 10;
+
+export class Dude {
+  state: StateMachine<Dude> = new StateMachine(new DudeIdleState(this));
+  readonly hand = new Hand(this);
+  readonly head = new Head(this);
+
+  x: number;
+  y = 11;
+  direction: 1 | -1 = 1;
+  allow: {
+    control: boolean;
+    sit: boolean;
+  } = {
+    control: true,
+    sit: false,
+  };
+
+  walkStart = new Subject<null>();
+  sitStart = new Subject<null>();
+  sitEnd = new Subject<null>();
+  suckStart = new Subject<null>();
+  suckEnd = new Subject<null>();
+
+  constructor({ x = DUDE_START_X }: { x?: number } = {}) {
+    this.x = x;
+  }
+
+  update(updateArgs: UpdateArgs) {
+    this.state.update(updateArgs);
+  }
+
+  draw(drawArgs: DrawArgs) {
+    if (this.state.is(DudeNoneState)) {
+      return;
+    }
+
+    this.state.draw(drawArgs);
+    this.hand.draw(drawArgs);
+    this.head.draw(drawArgs);
+  }
+
+  get rx() {
+    return Math.round(this.x);
+  }
+
+  get ry() {
+    return Math.round(this.y);
+  }
+
+  bobHead() {
+    this.head.bob();
+  }
+
+  receiveCassette({ x }: { x: number }) {
+    this.state.transition(new DudeReceiveCassetteState(this));
+    this.x = x;
+  }
+
+  isSit() {
+    return this.state.is(DudeSitState);
+  }
+}
+
+class DudeNoneState extends State<Dude> {}
+
+class DudeIdleState extends State<Dude> {
+  private animation = new SheetAnimation(createSheet(16, 32, 1));
+
+  update({ inputController }: UpdateArgs) {
+    const isLeft = inputController.isHold(InputControl.Left);
+    const isRight = inputController.isHold(InputControl.Right);
+    const isDown = inputController.isHold(InputControl.Down);
+
+    if (isLeft || isRight) {
+      return new DudeWalkState(this.context);
+    }
+
+    if (this.context.allow.sit && isDown) {
+      return new DudeSitState(this.context);
+    }
+  }
+
+  draw({ ctx, images }: DrawArgs) {
+    const headY = 12;
+    const [frameX, frameY, frameWidth, frameHeight] = this.animation.frame();
+
+    drawDirectionSheet(
+      ctx,
+      images.dudeWalk,
+      [frameX, frameY + headY, frameWidth, frameHeight],
+      {
+        x: this.context.rx,
+        y: 11 + headY,
+        direction: this.context.direction,
+      },
+    );
+  }
+}
+
+class DudeWalkState extends State<Dude> {
+  private animation = new SheetAnimation(WALK_SHEET, {
+    loop: true,
+    delay: 0.12,
+  });
+
+  enter() {
+    this.context.walkStart.notify(null);
+  }
+
+  update({ deltaTime, inputController }: UpdateArgs) {
+    if (!this.context.allow.control) {
+      return;
+    }
+
+    const isDown = inputController.isHold(InputControl.Down);
+    if (this.context.allow.sit && isDown) {
+      return new DudeSitState(this.context);
+    }
+
+    const isLeft = inputController.isHold(InputControl.Left);
+    const isRight = inputController.isHold(InputControl.Right);
+    if (!isLeft && !isRight) {
+      return new DudeIdleState(this.context);
+    }
+
+    let { x, direction } = this.context;
+
+    const xChange = WALK_SPEED * deltaTime;
+    if (isLeft) {
+      x -= xChange;
+      direction = -1;
+    } else if (isRight) {
+      x += xChange;
+      direction = 1;
+    }
+    // Limit to screen bounds
+    x = Math.max(x, 0);
+    x = Math.min(x, OW);
+
+    this.context.x = x;
+    this.context.direction = direction;
+
+    this.animation.update(deltaTime);
+  }
+
+  draw({ ctx, images }: DrawArgs) {
+    const headY = 12;
+    const [frameX, frameY, frameWidth, frameHeight] = this.animation.frame();
+
+    drawDirectionSheet(
+      ctx,
+      images.dudeWalk,
+      [frameX, frameY + headY, frameWidth, frameHeight],
+      {
+        x: this.context.rx,
+        y: 11 + headY,
+        direction: this.context.direction,
+      },
+    );
+  }
+}
+
+class DudeSitState extends State<Dude> {
+  private sheet = createSheet(16, 32, 1);
+
+  enter() {
+    this.context.sitStart.notify(null);
+  }
+
+  exit() {
+    this.context.sitEnd.notify(null);
+  }
+
+  update({ inputController }: UpdateArgs) {
+    if (!this.context.allow.control) {
+      return;
+    }
+    const isUp = inputController.isHold(InputControl.Up);
+    if (isUp) {
+      return new DudeIdleState(this.context);
+    }
+  }
+
+  draw({ ctx, images }: DrawArgs) {
+    const headY = 13;
+    const [frameX, frameY, frameWidth, frameHeight] = this.sheet[0];
+    drawDirectionSheet(
+      ctx,
+      images.dudeSitting,
+      [frameX, frameY + headY, frameWidth, frameHeight],
+      {
+        x: this.context.rx,
+        y: 12 + headY,
+        direction: this.context.direction,
+      },
+    );
+  }
+}
+
+class DudeReceiveCassetteState extends State<Dude> {
+  private animation = new SheetAnimation(createSheet(16, 32, 1));
+  private timer = new Timer(4);
+
+  enter() {
+    this.context.hand.holdDown();
+    this.context.allow.control = false;
+  }
+
+  update({ deltaTime }: UpdateArgs) {
+    this.timer.update(deltaTime);
+    if (this.timer.isDone()) {
+      return new DudeSuckState(this.context);
+    }
+  }
+
+  // TODO: how to dedup drawings????
+  draw({ ctx, images }: DrawArgs) {
+    const headY = 12;
+    const [frameX, frameY, frameWidth, frameHeight] = this.animation.frame();
+
+    drawDirectionSheet(
+      ctx,
+      images.dudeWalk,
+      [frameX, frameY + headY, frameWidth, frameHeight],
+      {
+        x: this.context.rx,
+        y: 11 + headY,
+        direction: this.context.direction,
+      },
+    );
+  }
+}
+
+class DudeSuckState extends State<Dude> {
+  private animation = new SheetAnimation(createSheet(16, 32, 11), {
+    delay: 0.3,
+  });
+
+  enter() {
+    this.context.suckStart.notify(null);
+
+    this.context.head.none();
+    this.context.hand.none();
+  }
+
+  exit() {
+    this.context.suckEnd.notify(null);
+  }
+
+  update({ deltaTime }: UpdateArgs) {
+    this.animation.update(deltaTime);
+    if (this.animation.isComplete()) {
+      return new DudeNoneState(this.context);
+    }
+  }
+
+  draw({ ctx, images }: DrawArgs) {
+    drawDirectionSheet(
+      ctx,
+      resources.images.dudeSucked,
+      this.animation.frame(),
+      {
+        x: 32,
+        y: 10,
+      },
+    );
+  }
+}
+
+class Hand {
+  state = new StateMachine(new HandIdleState(this));
+
+  constructor(readonly dude: Dude) {}
+
+  draw(drawArgs: DrawArgs) {
+    if (this.state.is(HandNoneState)) {
+      return;
+    }
+
+    this.state.draw(drawArgs);
+  }
+
+  none() {
+    this.state.transition(new HandNoneState(this));
+  }
+
+  holdDown() {
+    this.state.transition(new HandHoldDownState(this));
+  }
+}
+
+class HandNoneState extends State<Hand> {}
+
+class HandIdleState extends State<Hand> {
+  draw({ ctx, images }: DrawArgs) {
+    if (this.context.dude.isSit()) {
+      drawSheet(ctx, images.dudeHand, [0, 0, 1, 8], {
+        x: this.context.dude.rx + 2,
+        y: this.context.dude.ry + 15,
+      });
+      drawSheet(ctx, images.dudeHand, [0, 0, 1, 8], {
+        x: this.context.dude.rx - 3,
+        y: this.context.dude.ry + 15,
+      });
+    } else {
+      drawSheet(ctx, images.dudeHand, [0, 0, 1, 8], {
+        x: this.context.dude.rx + 2,
+        y: this.context.dude.ry + 13,
+      });
+      drawSheet(ctx, images.dudeHand, [0, 0, 1, 8], {
+        x: this.context.dude.rx - 3,
+        y: this.context.dude.ry + 13,
+      });
+    }
+  }
+}
+
+class HandHoldDownState extends State<Hand> {
+  draw({ ctx, images }: DrawArgs) {
+    if (this.context.dude.direction === 1) {
+      drawSheet(ctx, images.dudeHand, [0, 0, 1, 8], {
+        x: this.context.dude.rx - 3,
+        y: this.context.dude.ry + 13,
+      });
+      drawDirectionSheet(ctx, images.dudeHand, [2, 0, 6, 8], {
+        x: this.context.dude.rx + 5,
+        y: this.context.dude.ry + 13,
+        direction: this.context.dude.direction,
+      });
+    } else {
+      drawSheet(ctx, images.dudeHand, [0, 0, 1, 8], {
+        x: this.context.dude.rx + 2,
+        y: this.context.dude.ry + 13,
+      });
+      drawDirectionSheet(ctx, images.dudeHand, [2, 0, 6, 8], {
+        x: this.context.dude.rx - 5,
+        y: this.context.dude.ry + 13,
+        direction: this.context.dude.direction,
+      });
+    }
+
+    // if (hand === 'static') {
+    //   ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
+    //   ctx.drawImage(handImage, 0, 0, 1, 8, destX + 10, destY + dstHandYOff, 1, 8);
+    // } else if (hand === 'holding-down') {
+    //   ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
+    //   ctx.drawImage(handImage, 2, 0, 6, 8, destX + 10, destY + dstHandYOff, 6, 8);
+    // } else if (hand === 'holding-straight') {
+    //   ctx.drawImage(handImage, 0, 0, 1, 8, destX + 5, destY + dstHandYOff, 1, 8);
+    //   ctx.drawImage(handImage, 9, 0, 6, 8, destX + 10, destY + dstHandYOff, 6, 8);
+    // }
+  }
+}
+
+class Head {
+  state = new StateMachine<Head>(new HeadStaticState(this));
+
+  bobStart = new Subject<null>();
+
+  constructor(readonly dude: Dude) {}
+
+  draw(drawArgs: DrawArgs) {
+    if (this.state.is(HeadNoneState)) {
+      return;
+    }
+    this.state.draw(drawArgs);
+  }
+
+  none() {
+    this.state.transition(new HeadNoneState(this));
+  }
+
+  bob() {
+    this.state.transition(new HeadBobState(this));
+  }
+
+  isBob() {
+    return this.state.is(HeadBobState);
+  }
+}
+
+class HeadNoneState extends State<Head> {}
+
+class HeadStaticState extends State<Head> {
+  draw({ ctx, images }: DrawArgs) {
+    const image = images.dudeHeadBob;
+
+    if (this.context.dude.isSit()) {
+      drawSheet(ctx, image, [0, 0, 16, 16], {
+        x: this.context.dude.rx - 8,
+        y: this.context.dude.ry + 2,
+      });
+    } else {
+      drawSheet(ctx, image, [0, 0, 16, 16], {
+        x: this.context.dude.rx - 8,
+        y: this.context.dude.ry,
+      });
+    }
+  }
+}
+
+class HeadBobState extends State<Head> {
+  enter() {
+    this.context.bobStart.notify(null);
+  }
+
+  draw({ ctx, images, lastTime }: DrawArgs) {
+    const srcX = Math.round(lastTime / 0.22) % 2 === 0 ? 0 : 16;
+
+    if (this.context.dude.isSit()) {
+      drawSheet(ctx, images.dudeHeadBob, [srcX, 0, 16, 16], {
+        x: this.context.dude.rx - 8,
+        y: this.context.dude.ry + 2,
+      });
+    } else {
+      drawSheet(ctx, images.dudeHeadBob, [srcX, 0, 16, 16], {
+        x: this.context.dude.rx - 8,
+        y: this.context.dude.ry,
+      });
+    }
+  }
 }
